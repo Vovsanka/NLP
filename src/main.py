@@ -1,6 +1,8 @@
 import sys
 import os
 
+from induce import induce_grammar
+
 
 EXIT_NOT_IMPLEMENTED = 22
 
@@ -31,8 +33,8 @@ def cmd_induce(args):
     else:
         print(f"Output: {grammar_prefix}.rules, {grammar_prefix}.lexicon, {grammar_prefix}.words (induced PCFG)")
 
-        
-    
+    induce_grammar(grammar_prefix=grammar_prefix)
+
 
 def main():
     if len(sys.argv) < 2:

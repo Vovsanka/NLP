@@ -18,3 +18,8 @@ class SymbolicExpression:
         self.children = children
 
 SE = SymbolicExpression # symbolic expression = non-leaf tree node
+
+# TODO: Rule
+
+# TODO: Lexicon
+

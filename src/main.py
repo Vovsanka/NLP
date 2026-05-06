@@ -21,7 +21,7 @@ def print_help():
 
 def cmd_induce(args):
     print("Grammar Induction\n")
-    print("Input: stdin (Treebank in Penn Treebank (PTB) format)")
+    print("Input: stdin (Treebank in Penn Treebank (PTB) format")
 
     if len(args) > 1:
         exit_not_implemented()

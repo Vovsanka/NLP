@@ -1,19 +1,23 @@
-# Executable name
 TARGET = pcfg_tool
+ENTRY  = src/main.py
+VENV   = venv
+PYTHON = $(VENV)/bin/python
+PIP    = $(VENV)/bin/pip
 
-# Python entry point inside src/
-ENTRY = src/main.py
+all: venv $(TARGET)
 
-# Default target
-all: $(TARGET)
+# Create virtual environment and install requirements
+venv: requirements.txt
+	python3 -m venv $(VENV)
+	$(PIP) install --upgrade pip
+	$(PIP) install -r requirements.txt
 
 # Build the executable wrapper
 $(TARGET): $(ENTRY)
-	# (TAB) create wrapper script
 	echo "#!/usr/bin/env bash" > $(TARGET)
-	echo "python3 $(ENTRY) \"\$$@\"" >> $(TARGET)
+	echo "$(PYTHON) $(ENTRY) \"\$$@\"" >> $(TARGET)
 	chmod +x $(TARGET)
 
-# Clean generated files
 clean:
 	rm -f $(TARGET)
+	rm -rf $(VENV)

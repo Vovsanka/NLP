@@ -1,8 +1,10 @@
 import sys
+import os
+
 
 EXIT_NOT_IMPLEMENTED = 22
 
-def not_implemented():
+def exit_not_implemented():
     sys.exit(EXIT_NOT_IMPLEMENTED)
 
 def print_help():
@@ -16,13 +18,26 @@ def print_help():
     print("Run 'pcfg_tool COMMAND' to execute a specific function.")
 
 def cmd_induce(args):
-    # Placeholder: not implemented yet
-    not_implemented()
+    print("Grammar Induction\n")
+    print("Input: stdin (Treebank in Penn Treebank (PTB) format)")
+
+    if len(args) > 1:
+        exit_not_implemented()
+    
+    grammar_prefix = args[0] if len(args) == 1 else None
+
+    if grammar_prefix is None:
+        print("Output: stdout with rules, lexicon, words (induced PCFG)")
+    else:
+        print(f"Output: {grammar_prefix}.rules, {grammar_prefix}.lexicon, {grammar_prefix}.words (induced PCFG)")
+
+        
+    
 
 def main():
     if len(sys.argv) < 2:
         print_help()
-        sys.exit(EXIT_NOT_IMPLEMENTED)
+        exit_not_implemented()
 
     cmd = sys.argv[1]
 
@@ -33,7 +48,9 @@ def main():
     # Unknown command
     print(f"Unknown command: {cmd}")
     print_help()
-    sys.exit(EXIT_NOT_IMPLEMENTED)
+    exit_not_implemented()
+    
+
 
 if __name__ == "__main__":
     main()

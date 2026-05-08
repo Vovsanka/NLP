@@ -2,13 +2,13 @@ import sys
 
 from parsy import string, regex, seq, forward_declaration
 
-from models import SE, T, NT, A, SR, LR
+from models import SE, T, NT, SR, LR
 
 
 WS = regex(r"\s*") # optional whitespace
 LPAR = string("(") # left paranthesis
 RPAR = string(")") # right paranthesis
-TOKEN = regex(r"[^()\s]+") # Terminal or Non-Terminal (Atom)
+TOKEN = regex(r"[^()\s]+") # Terminal or Non-Terminal 
 
 SE_PARSER = forward_declaration()
 

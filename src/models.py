@@ -3,7 +3,6 @@ from typing import Union, List
 
 T = Terminal = str # terminal = word
 NT = NonTerminal = str # non-terminal = non-leaf tree node label
-A = Atom = T | NT  # atom = token = terminal or non-terminal
 
 
 class SymbolicExpression:

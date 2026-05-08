@@ -6,6 +6,10 @@ NT = NonTerminal = str # non-terminal = non-leaf tree node label
 
 
 class SymbolicExpression:
+    """
+    Represents a non-leaf PTB tree node
+    """
+
     # label: NonTerminal
     # children: List[Union[Terminal, "SymbolicExpression"]] 
 
@@ -37,8 +41,14 @@ class SymbolicExpression:
 
 
 class SyntacticRule:
+    """
+    Represents a syntactic rule of the form: 
+
+    label -> child_labels
+    """
+
     # label: NonTerminal
-    # children: list[NonTerminal]
+    # child_lables: list[NonTerminal]
 
     def __init__(self, label: NonTerminal, child_labels: list[NonTerminal]):
         if not isinstance(label, NonTerminal):
@@ -62,6 +72,12 @@ class SyntacticRule:
 
 
 class LexicalRule:
+    """
+    Represents a lexical rule of the form: 
+
+    label -> word
+    """
+
     # label: NonTerminal
     # word: Terminal
     

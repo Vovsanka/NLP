@@ -24,6 +24,9 @@ SE_INNER = seq(
 SE_PARSER.become(LPAR >> WS >> SE_INNER << WS << RPAR)
 
 def parse_ptb(tree: str) -> SE:
+    """
+    Parses a PTB tree to a special symbolic expression
+    """
     parsed, rest = SE_PARSER.parse_partial(tree)
 
     if rest.strip():
@@ -32,6 +35,13 @@ def parse_ptb(tree: str) -> SE:
     return parsed
 
 def induce_grammar(grammar_prefix: str|None = None):
+    """
+    Induces a PCFG from the given PTB trees
+
+    Input (PTB) via stdin (multiline, press Enter one more time to finish the input)
+    Output: rules, lexicon and words in stdout
+    Alterntive output: 'grammar_prefix.rules', 'grammar_prefix.lexicon' and 'grammar_prefix.words' (if grammar_prefix is set)
+    """
     # rule accumulation
     label_counter: dict[NT, int] = {}
     sr_counter: dict[SR, int] = {}  
@@ -39,6 +49,9 @@ def induce_grammar(grammar_prefix: str|None = None):
     words: set[T] = set()
 
     def accumulate_rules_and_words(se: SE):
+        """
+        Accumulates the rules and words from a symblic expression
+        """
         # accumulate the rule label
         if se.label not in label_counter:
             label_counter[se.label] = 0

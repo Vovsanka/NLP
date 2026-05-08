@@ -37,6 +37,9 @@ def cmd_induce(args):
 
 
 def main():
+    """
+    CLI entry point
+    """
     if len(sys.argv) < 2:
         print_help()
         exit_not_implemented()

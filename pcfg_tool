@@ -1,2 +1,0 @@
-#!/usr/bin/env bash
-/home/wowa/Desktop/ma-studium/INF-MA-PR/NLP/NLP/venv/bin/python /home/wowa/Desktop/ma-studium/INF-MA-PR/NLP/NLP/src/main.py "$@"

@@ -1,2 +1,0 @@
-#!/usr/bin/env bash
-PYTHONPATH=/home/wowa/Desktop/ma-studium/INF-MA-PR/NLP/NLP/src: /home/wowa/Desktop/ma-studium/INF-MA-PR/NLP/NLP/venv/bin/python -m pytest -q

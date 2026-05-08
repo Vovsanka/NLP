@@ -1,0 +1,12 @@
+#+TITLE: Tests
+
+Die zur Verfügung gestellten Testfälle decken das Kommandozeileninterface und
+das Ausgabeformat der Pflichtaufgaben ab.  Teile der Wahlfplichtaufgaben
+werden nicht getestet.
+
+Ein Bestehen der Tests ist keine Garantie dafür, dass eine Teilaufgabe
+korrekt gelöst wurde.  Insbesondere decken diese Tests keine Randfälle ab.
+Stattdessen sollte das Bestehen der Tests als Grundvoraussetzung für die
+Abgabe einer Lösung gesehen werden.
+
+Der Aufruf der Tests erfolgt mittels `make -f tests.mk`.

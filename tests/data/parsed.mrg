@@ -1,0 +1,5 @@
+(ROOT (X (A a)) (Y (B b)))
+(ROOT (X (A a) (X (A a))) (Y (B b) (Y (B b) (Y (B b)))))
+(ROOT (X (A (B b))) (Y (B (A a))))
+(ROOT (X (A a)) (Y (B (A a))))
+(NOPARSE b)

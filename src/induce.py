@@ -104,7 +104,8 @@ def induce_grammar(grammar_prefix: str|None = None):
             rule_str += f"{cl} "
 
         # add the rule probability
-        rule_str += str(count/label_counter[rule.label]) 
+        prob = count/label_counter[rule.label]
+        rule_str += str(int(prob)) if prob.is_integer() else str(prob)
 
         # write the syntactic rule
         rules_f.write(rule_str + "\n")
@@ -113,10 +114,13 @@ def induce_grammar(grammar_prefix: str|None = None):
     if grammar_prefix is None:
         print("\nGrammar.lexicon:")
     for rule, count in lr_counter.items():
-        rule_str = f"{rule.label} -> {rule.word} "
+        rule_str = f"{rule.label} {rule.word} "
 
         # add the rule probability
-        rule_str += str(count/label_counter[rule.label]) 
+        prob = count/label_counter[rule.label]
+        if prob.is_integer(): 
+            prob = int(prob) # adjust the formatting
+        rule_str += str(prob)
 
         # write the syntactic rule
         lexicon_f.write(rule_str + "\n")

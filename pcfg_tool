@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-venv/bin/python src/main.py "$@"
+/home/wowa/Desktop/ma-studium/INF-MA-PR/NLP/NLP/venv/bin/python /home/wowa/Desktop/ma-studium/INF-MA-PR/NLP/NLP/src/main.py "$@"

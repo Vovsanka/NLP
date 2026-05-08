@@ -1,7 +1,7 @@
 import sys
 import os
 
-from induce import induce_grammar
+from induction import induce_grammar
 
 
 EXIT_NOT_IMPLEMENTED = 22

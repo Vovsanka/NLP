@@ -38,9 +38,22 @@ class SymbolicExpression:
 
     def __repr__(self) -> str:
         return str(self)
+    
+
+class Rule:
+
+    def __init__(self, label: NonTerminal, weight: float|None = None):
+        if not isinstance(label, NonTerminal):
+            raise Exception("Parsing error: rule label must be a non-terminal!")
+        self.label = label
+        if weight is None:
+            self.weight = 0
+        else:
+            self.weight = weight
+        
 
 
-class SyntacticRule:
+class SyntacticRule(Rule):
     """
     Represents a syntactic rule of the form: 
 
@@ -50,13 +63,10 @@ class SyntacticRule:
     # label: NonTerminal
     # child_lables: list[NonTerminal]
 
-    def __init__(self, label: NonTerminal, child_labels: list[NonTerminal]):
-        if not isinstance(label, NonTerminal):
-            raise Exception("Parsing error: rule label must be a non-terminal!")
+    def __init__(self, label: NonTerminal, child_labels: list[NonTerminal], weight: float|None = None):
+        super().__init__(label=label, weight=weight)
         if not child_labels:
-            raise Exception("Parsing error: rule contains only one element!")
-
-        self.label = label
+            raise Exception("Parsing error: the rule contains no subrules!")
         self.child_labels = child_labels
 
     def __eq__(self, other):
@@ -71,7 +81,7 @@ class SyntacticRule:
 
 
 
-class LexicalRule:
+class LexicalRule(Rule):
     """
     Represents a lexical rule of the form: 
 
@@ -81,13 +91,10 @@ class LexicalRule:
     # label: NonTerminal
     # word: Terminal
     
-    def __init__(self, label: NonTerminal, word: Terminal):
-        if not isinstance(label, NonTerminal):
-            raise Exception("Parsing error: token label must be a non-terminal!")
+    def __init__(self, label: NonTerminal, word: Terminal, weight: float|None = None):
+        super().__init__(label=label, weight=weight)
         if not isinstance(word, Terminal):
             raise Exception("Parsing error: token word must be a terminal!")
-
-        self.label = label
         self.word = word
 
     def __eq__(self, other):

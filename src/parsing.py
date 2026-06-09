@@ -10,23 +10,25 @@ ESCAPE_TOKENS = {
     " ": "_"
 }
 
-terminal = regex(r"[A-Za-z0-9_]+").map(lambda s: T(s))
-nonterminal = regex(r"[A-Za-z0-9_]+").map(lambda s: NT(s))
-arrow = string("->")
-weight = regex(r"[0-9]*\.?[0-9]+").map(float)
+nonterminal = regex(r"\S+").map(NT)
+terminal    = regex(r"\S+").map(T)
+literal     = regex(r"\S+")           
+arrow       = string("->")
+weight      = regex(r"[0-9]*\.?[0-9]+").map(float)
 
 syntactic_rule_parser = seq(
-    nonterminal.skip(regex(r"\s*")),
+    nonterminal.skip(regex(r"\s+")),
     arrow.skip(regex(r"\s+")),
     nonterminal.sep_by(regex(r"\s+"), min=1),
     regex(r"\s+") >> weight
 ).map(lambda t: SR(t[0], t[1], t[2]))
 
 lexical_rule_parser = seq(
-    nonterminal.skip(regex(r"\s+")),
-    regex(r"[A-Za-z0-9_]+").skip(regex(r"\s+")),  # the middle token 'v' (ignored)
-    terminal
-).map(lambda t: LR(t[0], t[1]))
+    nonterminal.skip(regex(r"\s+")),   
+    literal.skip(regex(r"\s+")),       
+    terminal                           
+).map(lambda t: LR(t[0], t[1], t[2]))
+
 
 
 def load_binarized_syntactic_rules(path: str) -> list[SR]:
@@ -77,8 +79,8 @@ def load_lexical_rules(path: str) -> list[SR]:
 
 def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str):
     # load and binarize grammar rules 
-    syntactic_rules  = load_binarized_syntactic_rules(syntactic_rules_path=syntactic_rules_path)
-    lexical_rules = load_lexical_rules(lexical_rules_path=lexical_rules_path)
+    syntactic_rules  = load_binarized_syntactic_rules(path=syntactic_rules_path)
+    lexical_rules = load_lexical_rules(path=lexical_rules_path)
     print(syntactic_rules)
     # read and parse the sentences one by one
     # for line in sys.stdin:

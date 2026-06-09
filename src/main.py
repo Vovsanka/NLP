@@ -8,6 +8,7 @@ from parsing import parse_sentences
 EXIT_NOT_IMPLEMENTED = 22
 
 def exit_not_implemented():
+    print("NOT IMPLEMENTED EXIT")
     sys.exit(EXIT_NOT_IMPLEMENTED)
 
 def print_help():

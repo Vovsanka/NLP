@@ -95,6 +95,7 @@ def deduce(words: list[str], lexical_rules: list[LR], syntactic_rules: list[SR],
     N = len(words)
     # 
     c: list[list[dict[int, float]]] = [[{} for _ in range(N+1)] for _ in range(N+1)]
+    backtrace: list[list[dict[int, tuple[int, int, int]]]] = [[{} for _ in range(N+1)] for _ in range(N+1)]
     #
     nt_idx: dict[NT, int] = {}
     counter = 0
@@ -133,35 +134,44 @@ def deduce(words: list[str], lexical_rules: list[LR], syntactic_rules: list[SR],
         k = nt_idx[lr.label]
         if lr.word in word_set: 
             for i in word_positions[lr.word]:
-                heappush(priority_queue, (-lr.weight, i, i + 1, k))
+                heappush(priority_queue, (-lr.weight, i, i + 1, k, i + 1))
             processed.add(lr.word)
     if len(processed) < N:
         print(f"NOPARSE {' '.join(words)}")
         return
     # 
     while priority_queue:
-        inv_w, i, j, k = heappop(priority_queue)
+        inv_w, i, j, k, r, ij = heappop(priority_queue)
         if k not in c[i][j]:
             c[i][j][k] = -inv_w
-            for r in contained[k]:
+            backtrace[i][j][k] = (r, ij)
+            for rr in contained[k]:
                 ww, kk, children = indexed_syntactic_rules[r] # k in children
                 if len(children) == 1: # chain rule
-                    heappush(priority_queue, (ww*inv_w, i, j, kk))
+                    heappush(priority_queue, (ww*inv_w, i, j, kk, rr, j))
                 else: # len(children) == 2
                     if children[0] == k: # left child
                         for jj in range(j + 1, N + 1):
                             if children[1] in c[j][jj]:
-                                heappush(priority_queue, (ww * inv_w * c[j][jj][children[1]], i, jj, kk))
+                                heappush(priority_queue, (ww * inv_w * c[j][jj][children[1]], i, jj, kk, rr, j))
                     if children[1] == k: # right child
                         for ii in range(0, i):
                             if children[0] in c[ii][i]:
-                                heappush(priority_queue, (ww * c[ii][i][children[0]] * inv_w, i, j, kk))
+                                heappush(priority_queue, (ww * c[ii][i][children[0]] * inv_w, ii, j, kk, rr, i))
     # 
     print(nt_idx[start])
     if nt_idx[start] not in c[0][N]:
         print(f"NOPARSE {' '.join(words)}")
         return
     #
+    r, ij = backtrace[0][N][start]
+    stack = [(r, 0, ij, N)] 
+    while stack:
+        r, i, ij, j = stack.pop()
+        sr = syntactic_rules[r]
+        # TODO: finish backtracing and fix bugs
+        r1, ij1 = backtrace[0][N][sr.label]   
+        stack.append(())
     print(c[0][N][nt_idx[start]])
 
 def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str):

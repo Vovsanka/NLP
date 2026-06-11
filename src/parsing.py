@@ -88,7 +88,7 @@ def preprocess_raw_sentence(sentence: str) -> list[str]:
         for tok in tokens
     ]
 
-def deduce(words: list[str], lexical_rules: list[LR], syntactic_rules: list[SR]):
+def deduce(words: list[str], lexical_rules: list[LR], syntactic_rules: list[SR], start: str = "ROOT"):
     # word indices: i, j
     # NT index: k
     # rule index: r
@@ -149,7 +149,7 @@ def deduce(words: list[str], lexical_rules: list[LR], syntactic_rules: list[SR])
                     heappush(priority_queue, (ww*inv_w, i, j, kk))
                 else: # len(children) == 2
                     if children[0] == k: # left child
-                        for jj in range(j + 1, N):
+                        for jj in range(j + 1, N + 1):
                             if children[1] in c[j][jj]:
                                 heappush(priority_queue, (ww * inv_w * c[j][jj][children[1]], i, jj, kk))
                     if children[1] == k: # right child
@@ -157,7 +157,12 @@ def deduce(words: list[str], lexical_rules: list[LR], syntactic_rules: list[SR])
                             if children[0] in c[ii][i]:
                                 heappush(priority_queue, (ww * c[ii][i][children[0]] * inv_w, i, j, kk))
     # 
-    print(c[0][N])
+    print(nt_idx[start])
+    if nt_idx[start] not in c[0][N]:
+        print(f"NOPARSE {' '.join(words)}")
+        return
+    #
+    print(c[0][N][nt_idx[start]])
 
 def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str):
     # load grammar rules and binarize if necessary

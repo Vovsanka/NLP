@@ -1,4 +1,5 @@
 import sys
+from heapq import heappush, heappop
 
 from parsy import string, regex, seq
 
@@ -6,8 +7,7 @@ from models import SR, LR, NT, T
 
 ESCAPE_TOKENS = {
     "(": "-LPAR-",
-    ")": "-RPAR-",
-    " ": "_"
+    ")": "-RPAR-"
 }
 
 TOKEN = regex(r"\S+").map(str)
@@ -81,15 +81,98 @@ def load_lexical_rules(path: str) -> list[SR]:
     return rules
 
 
+def preprocess_raw_sentence(sentence: str) -> list[str]:
+    tokens = sentence.strip().split()
+    return [
+        tok.replace("(", "-LRB-").replace(")", "-RRB-")
+        for tok in tokens
+    ]
+
+def deduce(words: list[str], lexical_rules: list[LR], syntactic_rules: list[SR]):
+    # word indices: i, j
+    # NT index: k
+    # rule index: r
+    N = len(words)
+    # 
+    c: list[list[dict[int, float]]] = [[{} for _ in range(N+1)] for _ in range(N+1)]
+    #
+    nt_idx: dict[NT, int] = {}
+    counter = 0
+    for sr in lexical_rules:
+        if sr.label not in nt_idx:
+            nt_idx[sr.label] = counter
+            counter += 1
+    for sr in syntactic_rules:
+        if sr.label not in nt_idx:
+            nt_idx[sr.label] = counter
+            counter += 1
+    # 
+    indexed_syntactic_rules: list[tuple] = []
+    for sr in syntactic_rules:
+        indexed_syntactic_rules.append((
+            sr.weight, 
+            nt_idx[sr.label], 
+            [nt_idx[cl] for cl in sr.child_labels]
+        ))
+    #
+    contained: list[list[int]] = [[] for _ in range(len(nt_idx))]
+    for r, isr in enumerate(indexed_syntactic_rules):
+        for k in isr[2]:
+            contained[k].append(r)
+    #
+    word_set = set(words)
+    word_positions: dict[str, list[int]] = {}
+    for i, w in enumerate(words):
+        if w not in word_positions:
+            word_positions[w] = []
+        word_positions[w].append(i)
+    # 
+    priority_queue = []
+    processed: set[str] = set()
+    for lr in lexical_rules:
+        k = nt_idx[lr.label]
+        if lr.word in word_set: 
+            for i in word_positions[lr.word]:
+                heappush(priority_queue, (-lr.weight, i, i + 1, k))
+            processed.add(lr.word)
+    if len(processed) < N:
+        print(f"NOPARSE {' '.join(words)}")
+        return
+    # 
+    while priority_queue:
+        inv_w, i, j, k = heappop(priority_queue)
+        if k not in c[i][j]:
+            c[i][j][k] = -inv_w
+            for r in contained[k]:
+                ww, kk, children = indexed_syntactic_rules[r] # k in children
+                if len(children) == 1: # chain rule
+                    heappush(priority_queue, (ww*inv_w, i, j, kk))
+                else: # len(children) == 2
+                    if children[0] == k: # left child
+                        for jj in range(j + 1, N):
+                            if children[1] in c[j][jj]:
+                                heappush(priority_queue, (ww * inv_w * c[j][jj][children[1]], i, jj, kk))
+                    if children[1] == k: # right child
+                        for ii in range(0, i):
+                            if children[0] in c[ii][i]:
+                                heappush(priority_queue, (ww * c[ii][i][children[0]] * inv_w, i, j, kk))
+    # 
+    print(c[0][N])
+
 def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str):
-    # load and binarize grammar rules 
-    syntactic_rules  = load_binarized_syntactic_rules(path=syntactic_rules_path)
+    # load grammar rules and binarize if necessary
     lexical_rules = load_lexical_rules(path=lexical_rules_path)
+    syntactic_rules  = load_binarized_syntactic_rules(path=syntactic_rules_path)
     # read and parse the sentences one by one
-    # for line in sys.stdin:
-    #     # read the line with the tree from stdin
-    #     line = line.rstrip("\n")
-    #     if not line.strip():
-    #         break  # finish if reached an empty line (or enter pressed)
-    #     sentence = preprocess_raw_sentence(sentence=line)
-    #     # TODO: implement a parsing algorithm (CYK or deductive? think of datastructures for the rules)
+    for line in sys.stdin:
+        # read the line with the tree from stdin
+        line = line.rstrip("\n")
+        if not line.strip():
+            break  # finish if reached an empty line (or enter pressed)
+        words: list[str] = preprocess_raw_sentence(sentence=line)
+        # deductive parsing algorithm
+        deduce(
+            words=words, 
+            lexical_rules=lexical_rules,
+            syntactic_rules=syntactic_rules
+        )

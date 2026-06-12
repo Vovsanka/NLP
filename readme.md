@@ -36,7 +36,6 @@ The accumulation structures are used to construct the final PCFG.
 ### Run Induction
 
 Input (PTB) via stdin (multiline, press Enter one more time to finish the input)
-
 Output: rules, lexicon and words in stdout
 ```
 ./pcfg_tool induce
@@ -45,4 +44,16 @@ Output: rules, lexicon and words in stdout
 Alterntive output: 'grammar.rules', 'grammar.lexicon' and 'grammar.words' (if the optional grammar name is set to grammar)
 ```
 ./pcfg_tool induce grammar
+```
+
+## Sentence Parsing (Task 2)
+Sentences are parsed one by one using the deductive parsing (Knuth's algorithm)
+Non-terminals as well as rules are encoded as integers to improve the overall perfomance. 
+
+### Run Parsing
+
+Input: preprocessed sentences via stdin (multiline, press Enter one more time to finish the input)
+Output: derivation trees in PTB format
+```
+./pcfg_tool parse [-i ROOT | --initial ROOT] GRAMMAR.rules GRAMMAR.lexicon
 ```

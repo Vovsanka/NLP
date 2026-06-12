@@ -59,6 +59,7 @@ def deduce(words: list[str], lexical_rules: list[LR], syntactic_rules: list[SR],
     # NT index: k
     # rule index: r
     N = len(words)
+    M = len(syntactic_rules)
     # 
     c: list[list[dict[int, float]]] = [[{} for _ in range(N+1)] for _ in range(N+1)]
     backtrace: list[list[dict[int, tuple[int, int, int]]]] = [[{} for _ in range(N+1)] for _ in range(N+1)]
@@ -95,20 +96,21 @@ def deduce(words: list[str], lexical_rules: list[LR], syntactic_rules: list[SR],
         word_positions[w].append(i)
     # 
     priority_queue = []
-    processed: set[str] = set()
+    covered = [False] * N
     for r, lr in enumerate(lexical_rules):
         k = nt_idx[lr.label]
         if lr.word in word_set: 
             for i in word_positions[lr.word]:
-                heappush(priority_queue, (-lr.weight, i, i + 1, k, r, i + 1))
-            processed.add(lr.word)
-    if len(processed) < N:
-        return f"NOPARSE {' '.join(words)}"
+                covered[i] = True
+                heappush(priority_queue, (-lr.weight, i, i + 1, k, M + r, i + 1))
+    if not all(covered):
+        return f"(NOPARSE {' '.join(words)})"
     # 
     while priority_queue:
         inv_w, i, j, k, r, ij = heappop(priority_queue)
-        if k not in c[i][j]:
-            c[i][j][k] = -inv_w
+        w = -inv_w
+        if k not in c[i][j] or w > c[i][j][k]:
+            c[i][j][k] = w
             backtrace[i][j][k] = (r, ij)
             for rr in contained[k]:
                 ww, kk, children = indexed_syntactic_rules[rr] # k in children
@@ -125,7 +127,7 @@ def deduce(words: list[str], lexical_rules: list[LR], syntactic_rules: list[SR],
                                 heappush(priority_queue, (ww * c[ii][i][children[0]] * inv_w, ii, j, kk, rr, i))
     # 
     if nt_idx[start] not in c[0][N]:
-        return f"NOPARSE {' '.join(words)}"
+        return f"(NOPARSE {' '.join(words)})"
     #
     r, ij = backtrace[0][N][nt_idx[start]]
     stack = [(r, 0, ij, N)] 
@@ -133,8 +135,8 @@ def deduce(words: list[str], lexical_rules: list[LR], syntactic_rules: list[SR],
     ptb = ""
     while stack:
         r, i, ij, j = stack.pop()
-        if i + 1 == j:
-            lr = lexical_rules[r]
+        if r >= M: # i + 1 == j
+            lr = lexical_rules[r - M]
             ptb += f"({lr.label} {lr.word})"
             while close_stack and close_stack[-1] == j:
                 _ = close_stack.pop()
@@ -149,7 +151,7 @@ def deduce(words: list[str], lexical_rules: list[LR], syntactic_rules: list[SR],
             stack.append((r2, ij, ij2, j))
         r1, ij1 = backtrace[i][ij][nt_idx[sr.child_labels[0]]]
         stack.append((r1, i, ij1, ij)) 
-    return ptb
+    return ptb.rstrip()
 
 def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str):
     # load grammar rules and binarize if necessary

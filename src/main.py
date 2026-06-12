@@ -29,8 +29,8 @@ def print_help():
 
 
 def cmd_induce(args: list):
-    print("Grammar Induction\n")
-    print("Input: stdin (Treebank in Penn Treebank [PTB] format)")
+    # print("Grammar Induction\n")
+    # print("Input: stdin (Treebank in Penn Treebank [PTB] format)")
 
     if len(args) > 1:
         exit_not_implemented()
@@ -45,9 +45,9 @@ def cmd_induce(args: list):
     induce_grammar(grammar_prefix=grammar_prefix)
 
 def cmd_parse(args: list):
-    print("Sentence Parsing\n")
-    print("Input: grammar.rules grammar.lexicon < sentences")
-    print("Output: best parse tree (in Penn Treebank [PTB] format)")
+    # print("Sentence Parsing\n")
+    # print("Input: grammar.rules grammar.lexicon < sentences")
+    # print("Output: best parse tree (in Penn Treebank [PTB] format)")
 
     if len(args) != 2:
         exit_not_implemented()

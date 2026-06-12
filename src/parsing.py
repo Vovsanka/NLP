@@ -5,16 +5,11 @@ from parsy import string, regex, seq
 
 from models import SR, LR, NT, T
 
-ESCAPE_TOKENS = {
-    "(": "-LPAR-",
-    ")": "-RPAR-"
-}
 
 TOKEN = regex(r"\S+").map(str)
 ARROW = string("->")
 
-
-syntactic_rule_parser = seq(
+SR_PARSER = seq(
     TOKEN.skip(regex(r"\s+")),
     ARROW.skip(regex(r"\s+")),
     TOKEN.sep_by(regex(r"\s+"), min=2)
@@ -24,7 +19,7 @@ syntactic_rule_parser = seq(
     weight=float(t[2][-1])
 ))
 
-lexical_rule_parser = seq(
+LR_PARSER = seq(
     TOKEN.skip(regex(r"\s+")),   
     TOKEN.skip(regex(r"\s+")),       
     TOKEN                           
@@ -36,37 +31,15 @@ lexical_rule_parser = seq(
 
 
 def load_binarized_syntactic_rules(path: str) -> list[SR]:
-    bin_rules: list[SR] = []
-    nt_counter: dict[NT, int] = {}
+    rules: list[SR] = []
     with open(path, "r", encoding="utf8") as f:
         for line in f:
             line = line.strip()
             if not line:
                 continue
-            rule = syntactic_rule_parser.parse(line)
-            if len(rule.child_labels) <= 2:
-                bin_rules.append(rule)
-                continue
-            # binarization (=> CNF)
-            if rule.label not in nt_counter:
-                nt_counter[rule.label] = 0
-            current_label = rule.label
-            for i in range(len(rule.child_labels) - 1):
-                if i == len(rule.child_labels) - 2:
-                    next_label = rule.child_labels[-1]
-                else:
-                    nt_counter[rule.label] += 1
-                    next_label = NT(f"{rule.label}@{nt_counter[rule.label]}")
-                bin_rules.append(SR(
-                    label=current_label,
-                    child_labels=[
-                        rule.child_labels[i],
-                        next_label
-                    ],
-                    weight=rule.weight if i == 0 else 1.0
-                ))
-                current_label = next_label
-    return bin_rules
+            rule = SR_PARSER.parse(line)
+            rules.append(rule)
+    return rules
 
 
 def load_lexical_rules(path: str) -> list[SR]:
@@ -76,19 +49,12 @@ def load_lexical_rules(path: str) -> list[SR]:
             line = line.strip()
             if not line:
                 continue
-            rule = lexical_rule_parser.parse(line)
+            rule = LR_PARSER.parse(line)
             rules.append(rule)
     return rules
 
 
-def preprocess_raw_sentence(sentence: str) -> list[str]:
-    tokens = sentence.strip().split()
-    return [
-        tok.replace("(", "-LRB-").replace(")", "-RRB-")
-        for tok in tokens
-    ]
-
-def deduce(words: list[str], lexical_rules: list[LR], syntactic_rules: list[SR], start: str = "ROOT"):
+def deduce(words: list[str], lexical_rules: list[LR], syntactic_rules: list[SR], start: str = "ROOT") -> str:
     # word indices: i, j
     # NT index: k
     # rule index: r
@@ -130,15 +96,14 @@ def deduce(words: list[str], lexical_rules: list[LR], syntactic_rules: list[SR],
     # 
     priority_queue = []
     processed: set[str] = set()
-    for lr in lexical_rules:
+    for r, lr in enumerate(lexical_rules):
         k = nt_idx[lr.label]
         if lr.word in word_set: 
             for i in word_positions[lr.word]:
-                heappush(priority_queue, (-lr.weight, i, i + 1, k, i + 1))
+                heappush(priority_queue, (-lr.weight, i, i + 1, k, r, i + 1))
             processed.add(lr.word)
     if len(processed) < N:
-        print(f"NOPARSE {' '.join(words)}")
-        return
+        return f"NOPARSE {' '.join(words)}"
     # 
     while priority_queue:
         inv_w, i, j, k, r, ij = heappop(priority_queue)
@@ -146,7 +111,7 @@ def deduce(words: list[str], lexical_rules: list[LR], syntactic_rules: list[SR],
             c[i][j][k] = -inv_w
             backtrace[i][j][k] = (r, ij)
             for rr in contained[k]:
-                ww, kk, children = indexed_syntactic_rules[r] # k in children
+                ww, kk, children = indexed_syntactic_rules[rr] # k in children
                 if len(children) == 1: # chain rule
                     heappush(priority_queue, (ww*inv_w, i, j, kk, rr, j))
                 else: # len(children) == 2
@@ -159,20 +124,32 @@ def deduce(words: list[str], lexical_rules: list[LR], syntactic_rules: list[SR],
                             if children[0] in c[ii][i]:
                                 heappush(priority_queue, (ww * c[ii][i][children[0]] * inv_w, ii, j, kk, rr, i))
     # 
-    print(nt_idx[start])
     if nt_idx[start] not in c[0][N]:
-        print(f"NOPARSE {' '.join(words)}")
-        return
+        return f"NOPARSE {' '.join(words)}"
     #
-    r, ij = backtrace[0][N][start]
+    r, ij = backtrace[0][N][nt_idx[start]]
     stack = [(r, 0, ij, N)] 
+    close_stack = []
+    ptb = ""
     while stack:
         r, i, ij, j = stack.pop()
+        if i + 1 == j:
+            lr = lexical_rules[r]
+            ptb += f"({lr.label} {lr.word})"
+            while close_stack and close_stack[-1] == j:
+                _ = close_stack.pop()
+                ptb += ")"
+            ptb += " "
+            continue
         sr = syntactic_rules[r]
-        # TODO: finish backtracing and fix bugs
-        r1, ij1 = backtrace[0][N][sr.label]   
-        stack.append(())
-    print(c[0][N][nt_idx[start]])
+        ptb += f"({sr.label} "
+        close_stack.append(j)
+        if ij != j:  # not chain rule
+            r2, ij2 = backtrace[ij][j][nt_idx[sr.child_labels[1]]]
+            stack.append((r2, ij, ij2, j))
+        r1, ij1 = backtrace[i][ij][nt_idx[sr.child_labels[0]]]
+        stack.append((r1, i, ij1, ij)) 
+    return ptb
 
 def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str):
     # load grammar rules and binarize if necessary
@@ -184,10 +161,10 @@ def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str):
         line = line.rstrip("\n")
         if not line.strip():
             break  # finish if reached an empty line (or enter pressed)
-        words: list[str] = preprocess_raw_sentence(sentence=line)
+        words: list[str] = line.strip().split()
         # deductive parsing algorithm
-        deduce(
+        print(deduce(
             words=words, 
             lexical_rules=lexical_rules,
             syntactic_rules=syntactic_rules
-        )
+        ))

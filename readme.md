@@ -47,12 +47,13 @@ Alterntive output: 'grammar.rules', 'grammar.lexicon' and 'grammar.words' (if th
 ```
 
 ## Sentence Parsing (Task 2)
-Sentences are parsed one by one using the deductive parsing (Knuth's algorithm)
+Sentences are parsed one by one using the deductive parsing (Knuth's algorithm).
 Non-terminals as well as rules are encoded as integers to improve the overall perfomance. 
 
 ### Run Parsing
 
 Input: preprocessed sentences via stdin (multiline, press Enter one more time to finish the input)
+
 Output: derivation trees in PTB format
 ```
 ./pcfg_tool parse [-i ROOT | --initial ROOT] GRAMMAR.rules GRAMMAR.lexicon

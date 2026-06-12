@@ -19,7 +19,7 @@ def print_help():
     print("                     If GRAMMAR is given, write GRAMMAR.rules,")
     print("                     GRAMMAR.lexicon, and GRAMMAR.words.")
     print()
-    print("  parse RULES LEXICON")
+    print("  parse [-i ROOT | --initial ROOT] RULES LEXICON")
     print("                     Parse sentences read from standard input using the")
     print("                     PCFG defined by RULES and LEXICON. Sentences must be")
     print("                     whitespace-separated tokens. For each sentence, output")
@@ -49,6 +49,16 @@ def cmd_parse(args: list):
     # print("Input: grammar.rules grammar.lexicon < sentences")
     # print("Output: best parse tree (in Penn Treebank [PTB] format)")
 
+    start_symbol = "ROOT"
+    while args and args[0].startswith("-"):
+        if args[0] in ("-i", "--initial"):
+            if len(args) < 2:
+                exit_not_implemented()
+            start_symbol = args[1]
+            args = args[2:]
+        else:
+            exit_not_implemented()
+
     if len(args) != 2:
         exit_not_implemented()
     
@@ -57,7 +67,8 @@ def cmd_parse(args: list):
 
     parse_sentences(
         syntactic_rules_path=syntactic_rules_path,
-        lexical_rules_path=lexical_rules_path    
+        lexical_rules_path=lexical_rules_path,
+        start_symbol=start_symbol  
     )
 
 

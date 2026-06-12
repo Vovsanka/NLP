@@ -54,7 +54,7 @@ def load_lexical_rules(path: str) -> list[SR]:
     return rules
 
 
-def deduce(words: list[str], lexical_rules: list[LR], syntactic_rules: list[SR], start: str = "ROOT") -> str:
+def deduce(words: list[str], lexical_rules: list[LR], syntactic_rules: list[SR], start) -> str:
     # word indices: i, j
     # NT index: k
     # rule index: r
@@ -153,7 +153,7 @@ def deduce(words: list[str], lexical_rules: list[LR], syntactic_rules: list[SR],
         stack.append((r1, i, ij1, ij)) 
     return ptb.rstrip()
 
-def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str):
+def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str, start_symbol: str):
     # load grammar rules and binarize if necessary
     lexical_rules = load_lexical_rules(path=lexical_rules_path)
     syntactic_rules  = load_binarized_syntactic_rules(path=syntactic_rules_path)
@@ -168,5 +168,6 @@ def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str):
         print(deduce(
             words=words, 
             lexical_rules=lexical_rules,
-            syntactic_rules=syntactic_rules
+            syntactic_rules=syntactic_rules,
+            start=start_symbol
         ))

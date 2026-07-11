@@ -15,15 +15,29 @@ def print_help():
     print("pcfg_tool [COMMAND]")
     print("Tools for PCFG-based parsing of natural language sentences.\n")
     print("Available commands:")
-    print("  induce [GRAMMAR]   Induce a PCFG from constituent trees read from stdin.")
+    print("  induce [GRAMMAR])")
+    print("                     Induce a PCFG from constituent trees read from stdin.")
     print("                     If GRAMMAR is given, write GRAMMAR.rules,")
     print("                     GRAMMAR.lexicon, and GRAMMAR.words.")
     print()
-    print("  parse [-i ROOT | --initial ROOT] RULES LEXICON")
+    print("  parse [OPTIONS] RULES LEXICON")
     print("                     Parse sentences read from standard input using the")
     print("                     PCFG defined by RULES and LEXICON. Sentences must be")
     print("                     whitespace-separated tokens. For each sentence, output")
     print("                     the highest-probability parse tree or a NOPARSE tree.")
+    print("         -i --initial-nonterminal =N")
+    print("                     Define N as the start non -terminal.")
+    print("                     Default: ROOT.")
+    print()
+    print("  binarise [OPTIONS]")
+    print("                     Binarise a sequence of constituent trees read from stdin.")
+    print("                     Output the corresponding binarized constituent trees to stdout.")
+    print("         -h --horizontal =H")
+    print("                     Horizontal markovization with H.")
+    print("                     Default: infinite (999).")
+    print("         -v --vertical=V")
+    print("                     Vertical markovization with V.")
+    print("                     Default: 1.")
     print()
     print("Run 'pcfg_tool COMMAND' to execute a specific function.")
 
@@ -51,13 +65,14 @@ def cmd_parse(args: list):
 
     start_symbol = "ROOT"
     while args and args[0].startswith("-"):
-        if args[0] in ("-i", "--initial"):
-            if len(args) < 2:
-                exit_not_implemented()
+        if len(args) < 2:
+            exit_not_implemented()
+        if args[0] in ("-i", "--initial-nonterminal"):
             start_symbol = args[1]
-            args = args[2:]
         else:
             exit_not_implemented()
+        args = args[2:]
+        
 
     if len(args) != 2:
         exit_not_implemented()
@@ -71,6 +86,25 @@ def cmd_parse(args: list):
         start_symbol=start_symbol  
     )
 
+def cmd_binarise(args: list):
+    H = 999
+    V = 1
+    while args and args[0].startswith("-"):
+        if len(args) < 2:
+            exit_not_implemented()
+        if args[0] in ("-h", "--horizontal"):
+            H = args[1]
+        elif args[0] in ("v", "--vertical"):
+            V = args[1]
+        else:
+            exit_not_implemented()
+        args = args[2:]
+
+    if len(args) != 0:
+        exit_not_implemented()
+
+    exit_not_implemented()
+    # binarise_trees(H=H, V=V)
 
 
 def main():
@@ -89,6 +123,10 @@ def main():
     
     if cmd == "parse":
         cmd_parse(sys.argv[2:])
+        return 
+    
+    if cmd == "binarise":
+        cmd_binarise(sys.argv[2:])
         return 
 
     # Unknown command

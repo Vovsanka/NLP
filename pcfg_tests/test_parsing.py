@@ -5,10 +5,31 @@ from parsing import (
     LR_PARSER,
     load_binarized_syntactic_rules,
     load_lexical_rules,
+    preprocess_rules,
     deduce,
 )
 
 from models import SR, LR, NT, T
+
+
+# -------------------------
+# HELPER TO RUN DEDUCE WITH PREPROCESSING
+# -------------------------
+def _run_deduce(words, lexical, syntactic, start):
+    """Helper to handle the preprocessing requirements of deduce()"""
+    nt_idx, indexed_syntactic_rules, contained = preprocess_rules(
+        lexical_rules=lexical, 
+        syntactic_rules=syntactic
+    )
+    return deduce(
+        words=words,
+        lexical_rules=lexical,
+        syntactic_rules=syntactic,
+        nt_idx=nt_idx,
+        indexed_syntactic_rules=indexed_syntactic_rules,
+        contained=contained,
+        start=start
+    )
 
 
 # -------------------------
@@ -74,25 +95,9 @@ def test_deduce_single_word():
     ]
     syntactic = []
 
-    out = deduce(words, lexical, syntactic, start="A")
+    out = _run_deduce(words, lexical, syntactic, start=NT("A"))
 
     assert "(A a)" in out
-
-
-# -------------------------
-# NOPARSE CASE
-# -------------------------
-def test_deduce_noparse():
-    words = ["a"]
-
-    lexical = [
-        LR(NT("A"), T("b"), 1.0)
-    ]
-    syntactic = []
-
-    out = deduce(words, lexical, syntactic, start="A")
-
-    assert out.startswith("(NOPARSE")
 
 
 # -------------------------
@@ -110,11 +115,30 @@ def test_deduce_binary_tree():
         SR(NT("S"), [NT("A"), NT("B")], 1.0)
     ]
 
-    out = deduce(words, lexical, syntactic, start="S")
+    out = _run_deduce(words, lexical, syntactic, start=NT("S"))
 
     assert "S" in out
     assert "a" in out
     assert "b" in out
+
+
+# -------------------------
+# CHAIN RULE PARSE
+# -------------------------
+def test_deduce_chain_rule():
+    words = ["a"]
+
+    lexical = [
+        LR(NT("B"), T("a"), 1.0)
+    ]
+    # S -> B (Chain rule parsing branch where len(children) == 1)
+    syntactic = [
+        SR(NT("S"), [NT("B")], 0.9)
+    ]
+
+    out = _run_deduce(words, lexical, syntactic, start=NT("S"))
+
+    assert "(S (B a))" in out
 
 
 # -------------------------
@@ -132,7 +156,7 @@ def test_start_symbol_override():
         SR(NT("X"), [NT("A"), NT("B")], 1.0)
     ]
 
-    out = deduce(words, lexical, syntactic, start="X")
+    out = _run_deduce(words, lexical, syntactic, start=NT("X"))
 
     assert "(X" in out
 
@@ -147,10 +171,47 @@ def test_ptb_formatting():
         LR(NT("A"), T("a"), 1.0)
     ]
 
-    out = deduce(words, lexical, [], start="A")
+    out = _run_deduce(words, lexical, [], start=NT("A"))
 
     assert out.endswith(")")
     assert not out.endswith(" ")
+
+
+# -------------------------
+# OOV NOPARSE (Out of Vocabulary Error)
+# -------------------------
+def test_deduce_oov_noparse():
+    words = ["a", "unknown_word"]
+
+    lexical = [
+        LR(NT("A"), T("a"), 1.0)
+    ]
+    syntactic = []
+
+    out = _run_deduce(words, lexical, syntactic, start=NT("A"))
+
+    assert out == "(NOPARSE a unknown_word)"
+
+
+# -------------------------
+# STRUCTURAL NOPARSE (Words known, but rules don't form a valid tree)
+# -------------------------
+def test_deduce_structural_noparse():
+    words = ["a", "b"]
+
+    lexical = [
+        LR(NT("A"), T("a"), 1.0),
+        LR(NT("B"), T("b"), 1.0),
+        LR(NT("C"), T("dummy"), 1.0)  # Registers 'C' in nt_idx so preprocessing doesn't KeyError
+    ]
+    # S -> A C cannot parse "a b" because "b" is a B, not a C.
+    syntactic = [
+        SR(NT("S"), [NT("A"), NT("C")], 1.0)
+    ]
+
+    out = _run_deduce(words, lexical, syntactic, start=NT("S"))
+
+    assert out == "(NOPARSE a b)"
 
 
 # -------------------------
@@ -168,7 +229,7 @@ def test_full_pipeline():
         SR(NT("S"), [NT("A"), NT("B")], 1.0)
     ]
 
-    out = deduce(words, lexical, syntactic, start="S")
+    out = _run_deduce(words, lexical, syntactic, start=NT("S"))
 
     assert "S" in out
     assert "a" in out

@@ -3,6 +3,7 @@ import os
 
 from induction import induce_grammar
 from parsing import parse_sentences
+from binarization import binarize_trees
 
 
 EXIT_NOT_IMPLEMENTED = 22
@@ -103,8 +104,7 @@ def cmd_binarise(args: list):
     if len(args) != 0:
         exit_not_implemented()
 
-    exit_not_implemented()
-    # binarise_trees(H=H, V=V)
+    binarise_trees(H=H, V=V)
 
 
 def main():

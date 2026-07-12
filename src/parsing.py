@@ -198,7 +198,7 @@ def deduce(
         stack.append((r1, i, ij1, ij)) 
     return ptb.rstrip()
 
-def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str, start_symbol: str):
+def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str, start_symbol: str, unking: bool):
     """
     Parses the sentences one by one using syntactic and lexical rules
     """

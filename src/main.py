@@ -29,6 +29,8 @@ def print_help():
     print("         -i --initial-nonterminal =N")
     print("                     Define N as the start non -terminal.")
     print("                     Default: ROOT.")
+    print("         -u --unking")
+    print("                     Replace unknown words with UNK")
     print()
     print("  binarise [OPTIONS]")
     print("                     Binarise a sequence of constituent trees read from stdin.")
@@ -67,18 +69,19 @@ def cmd_parse(args: list):
     # print("Sentence Parsing\n")
     # print("Input: grammar.rules grammar.lexicon < sentences")
     # print("Output: best parse tree (in Penn Treebank [PTB] format)")
-
     start_symbol = "ROOT"
+    unking: bool = False
     while args and args[0].startswith("-"):
-        if len(args) < 2:
+        if args[0] in ("-u", "--unking"):
+            unking = True
+            args = args[1:]
             exit_not_implemented()
-        if args[0] in ("-i", "--initial-nonterminal"):
+        elif len(args) > 1 and args[0] in ("-i", "--initial-nonterminal"):
             start_symbol = args[1]
+            args = args[2:]
         else:
             exit_not_implemented()
-        args = args[2:]
         
-
     if len(args) != 2:
         exit_not_implemented()
     
@@ -88,7 +91,8 @@ def cmd_parse(args: list):
     parse_sentences(
         syntactic_rules_path=syntactic_rules_path,
         lexical_rules_path=lexical_rules_path,
-        start_symbol=start_symbol  
+        start_symbol=start_symbol,
+        unking=unking 
     )
 
 def cmd_binarise(args: list):

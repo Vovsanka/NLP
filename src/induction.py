@@ -85,7 +85,7 @@ def induce_grammar(grammar_prefix: str|None = None):
                 accumulate_rules_and_words(c)
 
     # request the treebank input
-    print("\nTraining Treebank: (one tree per line)")
+    # print("\nTraining Treebank: (one tree per line)")
 
     for line in sys.stdin:
         # read the line with the tree from stdin
@@ -109,8 +109,8 @@ def induce_grammar(grammar_prefix: str|None = None):
     
     # output the resulting PCFG (normalized) to stdout or to specified files
     # syntactic rules
-    if grammar_prefix is None:
-        print("\nGrammar.rules:")
+    # if grammar_prefix is None:
+    #     print("\nGrammar.rules:")
     for rule, count in sr_counter.items():
         rule_str = f"{rule.label} -> "
         for cl in rule.child_labels:
@@ -124,8 +124,8 @@ def induce_grammar(grammar_prefix: str|None = None):
         rules_f.write(rule_str + "\n")
 
     # lexical rules
-    if grammar_prefix is None:
-        print("\nGrammar.lexicon:")
+    # if grammar_prefix is None:
+    #     print("\nGrammar.lexicon:")
     for rule, count in lr_counter.items():
         rule_str = f"{rule.label} {rule.word} "
 
@@ -139,8 +139,8 @@ def induce_grammar(grammar_prefix: str|None = None):
         lexicon_f.write(rule_str + "\n")
     
     # words
-    if grammar_prefix is None:
-        print("\nGrammar.words:")
+    # if grammar_prefix is None:
+    #     print("\nGrammar.words:")
     for w in sorted(words):
         words_f.write(w + "\n")
     

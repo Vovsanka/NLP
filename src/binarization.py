@@ -2,8 +2,22 @@ import sys
 
 from induction import parse_ptb
 
-from models import SE, T, NT, SR, LR
+from models import SE, T, NT
 
+
+def debinarise_trees():
+    # print("\nBinarised Treebank: (one tree per line)")
+    out = sys.stdout
+    #
+    for line in sys.stdin:
+        # read the line with the tree from stdin
+        line = line.rstrip("\n")
+        if not line.strip():
+            break  # finish if reached an empty line (or enter pressed)
+        se: SE = parse_ptb(tree=line)
+        # assert str(se) == line
+        out.write(str(debinarise_one_tree(se)) + "\n")
+    out.flush()
 
 
 def binarise_trees(H: int, V: int):
@@ -19,6 +33,10 @@ def binarise_trees(H: int, V: int):
         # assert str(se) == line
         out.write(str(binarise_one_tree(se, H, V)) + "\n")
     out.flush()
+
+
+def debinarise_one_tree(se: SE):
+    return
 
 
 def binarise_one_tree(se: SE, H: int, V: int, ancestors: list[NT] = [], original_se: SE | None = None):

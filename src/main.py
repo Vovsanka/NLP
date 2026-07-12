@@ -3,7 +3,7 @@ import os
 
 from induction import induce_grammar
 from parsing import parse_sentences
-from binarization import binarise_trees
+from binarization import binarise_trees, debinarise_trees
 
 
 EXIT_NOT_IMPLEMENTED = 22
@@ -39,6 +39,10 @@ def print_help():
     print("         -v --vertical=V")
     print("                     Vertical markovization with V.")
     print("                     Default: 1.")
+    print()
+    print("  debinarise")
+    print("                     Debinarise a sequence of constituent trees read from stdin.")
+    print("                     Output the corresponding binarized constituent trees to stdout.")
     print()
     print("Run 'pcfg_tool COMMAND' to execute a specific function.")
 
@@ -106,6 +110,12 @@ def cmd_binarise(args: list):
 
     binarise_trees(H=H, V=V)
 
+def cmd_debinarise(args: list):
+    if len(args) != 0:
+        exit_not_implemented()
+
+    debinarise_trees()
+
 
 def main():
     """
@@ -126,6 +136,10 @@ def main():
         return 
     
     if cmd == "binarise":
+        cmd_binarise(sys.argv[2:])
+        return 
+    
+    if cmd == "debinarise":
         cmd_binarise(sys.argv[2:])
         return 
 

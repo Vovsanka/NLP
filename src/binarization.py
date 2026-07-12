@@ -35,8 +35,33 @@ def binarise_trees(H: int, V: int):
     out.flush()
 
 
-def debinarise_one_tree(se: SE):
-    return
+def debinarise_one_tree(se: SE) -> SE:
+    # remove the parent annotation
+    original_label = se.label.split("^<", 1)[0]
+    # preterminal (NT -> T)
+    if len(se.children) == 1 and isinstance(se.children[0], T):
+        return SE(
+            label=original_label,
+            children=se.children
+        )
+    # 1-2 children (NT -> NT) or (NT -> NT NT) (no more, because binarised!)
+    direct_children: list[SE] = []
+    current_se = se
+    while True:
+        direct_children.append(current_se.children[0])
+        if len(current_se.children) == 1:
+            break
+        last_child = current_se.children[1]
+        if "|<" in last_child.label:
+            current_se = last_child
+        else:
+            direct_children.append(last_child)
+            break
+    #
+    return SE(
+        label=original_label,
+        children=[debinarise_one_tree(se=child) for child in direct_children]
+    )
 
 
 def binarise_one_tree(se: SE, H: int, V: int, ancestors: list[NT] = [], original_se: SE | None = None):

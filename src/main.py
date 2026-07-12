@@ -113,7 +113,6 @@ def cmd_binarise(args: list):
 def cmd_debinarise(args: list):
     if len(args) != 0:
         exit_not_implemented()
-
     debinarise_trees()
 
 
@@ -140,7 +139,7 @@ def main():
         return 
     
     if cmd == "debinarise":
-        cmd_binarise(sys.argv[2:])
+        cmd_debinarise(sys.argv[2:])
         return 
 
     # Unknown command

@@ -1,12 +1,17 @@
 import pytest
 
-from binarization import binarise_one_tree
+from binarization import binarise_one_tree, debinarise_one_tree
 from induction import parse_ptb
 
 
 def binarise(tree: str, H: int, V: int):
     se = parse_ptb(tree=tree)
     return str(binarise_one_tree(se, H, V))
+
+def debinarise(tree: str):
+    se = parse_ptb(tree=tree)
+    return str(debinarise_one_tree(se))
+
 
 
 def test_preterminal_unchanged():
@@ -91,3 +96,65 @@ def test_artificial_nodes_do_not_get_new_vertical_context():
     # artificial nodes should not receive S as ancestor
     # (they inherit original ancestors)
     assert "|<B,C>" in result
+
+def test_debinarise_preterminal_unchanged():
+    tree = "(NN dog)"
+
+    result = debinarise(tree)
+
+    assert result == "(NN dog)"
+
+
+def test_debinarise_binary_tree_without_markov_nodes():
+    tree = "(NP (DT the) (NN dog))"
+
+    result = debinarise(tree)
+
+    assert result == "(NP (DT the) (NN dog))"
+
+
+def test_debinarise_removes_vertical_annotation():
+    tree = "(NP^<S,ROOT> (DT the) (NN dog))"
+
+    result = debinarise(tree)
+
+    assert result == "(NP (DT the) (NN dog))"
+
+
+def test_debinarise_removes_horizontal_markov_node():
+    tree = "(A (B b) (A|<C,D> (C c) (D d)))"
+
+    result = debinarise(tree)
+
+    assert result == "(A (B b) (C c) (D d))"
+
+
+def test_debinarise_nested_markov_nodes():
+    tree = (
+        "(A "
+        "(B b) "
+        "(A|<C,D,E> "
+        "(C c) "
+        "(A|<D,E> (D d) (E e)))"
+        ")"
+    )
+
+    result = debinarise(tree)
+
+    assert result == "(A (B b) (C c) (D d) (E e))"
+
+
+def test_debinarise_real_binarised_tree():
+    original = "(A (B b) (C c) (D d) (E e))"
+
+    se = parse_ptb(tree=original)
+
+    binarised = binarise_one_tree(
+        se,
+        H=2,
+        V=1
+    )
+
+    restored = debinarise_one_tree(binarised)
+
+    assert str(restored) == original

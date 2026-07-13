@@ -4,6 +4,7 @@ import os
 from induction import induce_grammar
 from parsing import parse_sentences
 from binarization import binarise_trees, debinarise_trees
+from unking import unk_trees
 
 
 EXIT_NOT_IMPLEMENTED = 22
@@ -44,7 +45,13 @@ def print_help():
     print()
     print("  debinarise")
     print("                     Debinarise a sequence of constituent trees read from stdin.")
-    print("                     Output the corresponding binarized constituent trees to stdout.")
+    print("                     Output the corresponding debinarized constituent trees to stdout.")
+    print()
+    print("  unk [OPTIONS]")
+    print("                     Trivial unking for a sequence of constituent trees read from stdin.")
+    print("                     Output of the trees obtained through trivial unking to stdout.")
+    print("         -t ---threshold =T")
+    print("                     Threshold of absolute frequency for unking")
     print()
     print("Run 'pcfg_tool COMMAND' to execute a specific function.")
 
@@ -75,7 +82,6 @@ def cmd_parse(args: list):
         if args[0] in ("-u", "--unking"):
             unking = True
             args = args[1:]
-            exit_not_implemented()
         elif len(args) > 1 and args[0] in ("-i", "--initial-nonterminal"):
             start_symbol = args[1]
             args = args[2:]
@@ -119,6 +125,21 @@ def cmd_debinarise(args: list):
         exit_not_implemented()
     debinarise_trees()
 
+def cmd_unk(args: list):
+    threshold = 0
+    while args and args[0].startswith("-"):
+        if len(args) > 1 and args[0] in ("-t", "--threshold"):
+            threshold = int(args[1])
+            args = args[2:]
+        else:
+            exit_not_implemented()
+        
+    if len(args) != 0:
+        exit_not_implemented()
+
+    unk_trees(threshold=threshold)
+
+
 
 def main():
     """
@@ -144,6 +165,10 @@ def main():
     
     if cmd == "debinarise":
         cmd_debinarise(sys.argv[2:])
+        return 
+
+    if cmd == "unk":
+        cmd_unk(sys.argv[2:])
         return 
 
     # Unknown command

@@ -1,12 +1,14 @@
-import pytest
-
+import sys
+import io
+from parsing import parse_sentences
 from parsing import (
     SR_PARSER,
     LR_PARSER,
-    load_binarized_syntactic_rules,
+    load_syntactic_rules,
     load_lexical_rules,
     preprocess_rules,
     deduce,
+    parse_sentences
 )
 
 from models import SR, LR, NT, T
@@ -63,7 +65,7 @@ def test_load_syntactic_rules(tmp_path):
     f = tmp_path / "rules.txt"
     f.write_text("S -> A B 1.0\nX -> S C 0.5\n")
 
-    rules = load_binarized_syntactic_rules(str(f))
+    rules = load_syntactic_rules(str(f))
 
     assert len(rules) == 2
     assert rules[0].label == NT("S")
@@ -190,7 +192,7 @@ def test_deduce_oov_noparse():
 
     out = _run_deduce(words, lexical, syntactic, start=NT("A"))
 
-    assert out == "(NOPARSE a unknown_word)"
+    assert out is None
 
 
 # -------------------------
@@ -211,7 +213,7 @@ def test_deduce_structural_noparse():
 
     out = _run_deduce(words, lexical, syntactic, start=NT("S"))
 
-    assert out == "(NOPARSE a b)"
+    assert out is None
 
 
 # -------------------------
@@ -234,3 +236,171 @@ def test_full_pipeline():
     assert "S" in out
     assert "a" in out
     assert "b" in out
+
+
+# -------------------------
+# UNKING: UNKNOWN WORD FAILS WITHOUT -u
+# -------------------------
+def test_parse_sentence_unknown_word_without_unking(tmp_path, monkeypatch, capsys):
+    rules = tmp_path / "rules"
+    lexicon = tmp_path / "lexicon"
+
+    rules.write_text("")
+    lexicon.write_text(
+        "A known 1.0\n"
+    )
+
+    monkeypatch.setattr(
+        sys,
+        "stdin",
+        io.StringIO("unknown\n")
+    )
+
+    parse_sentences(
+        syntactic_rules_path=str(rules),
+        lexical_rules_path=str(lexicon),
+        start_symbol="A",
+        unking=False
+    )
+
+    output = capsys.readouterr().out.strip()
+
+    assert output == "(NOPARSE unknown)"
+
+
+# -------------------------
+# UNKING: UNKNOWN WORD IS REPLACED BY UNK
+# -------------------------
+def test_parse_sentence_unknown_word_with_unking(tmp_path, monkeypatch, capsys):
+    rules = tmp_path / "rules"
+    lexicon = tmp_path / "lexicon"
+
+    rules.write_text("")
+
+    # The important part: grammar contains UNK
+    lexicon.write_text(
+        "A UNK 1.0\n"
+    )
+
+    monkeypatch.setattr(
+        sys,
+        "stdin",
+        io.StringIO("unknown\n")
+    )
+
+    parse_sentences(
+        syntactic_rules_path=str(rules),
+        lexical_rules_path=str(lexicon),
+        start_symbol="A",
+        unking=True
+    )
+
+    output = capsys.readouterr().out.strip()
+
+    # UNK should be restored to the original word
+    assert output == "(A unknown)"
+
+
+# -------------------------
+# UNKING: KNOWN WORD IS NOT REPLACED
+# -------------------------
+def test_parse_sentence_known_word_not_unked(tmp_path, monkeypatch, capsys):
+    rules = tmp_path / "rules"
+    lexicon = tmp_path / "lexicon"
+
+    rules.write_text("")
+
+    lexicon.write_text(
+        "A known 1.0\n"
+        "A UNK 1.0\n"
+    )
+
+    monkeypatch.setattr(
+        sys,
+        "stdin",
+        io.StringIO("known\n")
+    )
+
+    parse_sentences(
+        syntactic_rules_path=str(rules),
+        lexical_rules_path=str(lexicon),
+        start_symbol="A",
+        unking=True
+    )
+
+    output = capsys.readouterr().out.strip()
+
+    assert output == "(A known)"
+    assert "UNK" not in output
+
+
+# -------------------------
+# UNKING: MIXED KNOWN AND UNKNOWN WORDS
+# -------------------------
+def test_parse_sentence_mixed_known_unknown_with_unking(tmp_path, monkeypatch, capsys):
+    rules = tmp_path / "rules"
+    lexicon = tmp_path / "lexicon"
+
+    rules.write_text(
+        "S -> A B 1.0\n"
+    )
+
+    lexicon.write_text(
+        "A known 1.0\n"
+        "B UNK 1.0\n"
+    )
+
+    monkeypatch.setattr(
+        sys,
+        "stdin",
+        io.StringIO("known unknown\n")
+    )
+
+    parse_sentences(
+        syntactic_rules_path=str(rules),
+        lexical_rules_path=str(lexicon),
+        start_symbol="S",
+        unking=True
+    )
+
+    output = capsys.readouterr().out.strip()
+
+    assert "known" in output
+    assert "unknown" in output
+    assert "UNK" not in output
+
+
+# -------------------------
+# UNKING: MULTIPLE UNKNOWN WORDS
+# -------------------------
+def test_parse_sentence_multiple_unknown_words_with_unking(tmp_path, monkeypatch, capsys):
+    rules = tmp_path / "rules"
+    lexicon = tmp_path / "lexicon"
+
+    rules.write_text(
+        "S -> A B 1.0\n"
+    )
+
+    lexicon.write_text(
+        "A UNK 1.0\n"
+        "B UNK 1.0\n"
+    )
+
+    monkeypatch.setattr(
+        sys,
+        "stdin",
+        io.StringIO("first second\n")
+    )
+
+    parse_sentences(
+        syntactic_rules_path=str(rules),
+        lexical_rules_path=str(lexicon),
+        start_symbol="S",
+        unking=True
+    )
+
+    output = capsys.readouterr().out.strip()
+
+    assert "first" in output
+    assert "second" in output
+    assert "UNK" not in output

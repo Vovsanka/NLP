@@ -30,7 +30,7 @@ LR_PARSER = seq( # lexical rule parser (grammar.lexicon)
 ))
 
 
-def load_binarized_syntactic_rules(path: str) -> list[SR]:
+def load_syntactic_rules(path: str) -> list[SR]:
     """
     Loads syntactic rules from a grammar.rules file (assume already binarized)
     """
@@ -104,7 +104,7 @@ def deduce(
         indexed_syntactic_rules: list[tuple], 
         contained: list[list[int]],
         start
-    ) -> str:
+    ) -> str | None:
     """
     Deductive parsing algorithm producing a derivation tree in PTB format for the given sentense
 
@@ -146,7 +146,7 @@ def deduce(
                 covered[i] = True
                 heappush(priority_queue, (-lr.weight, i, i + 1, k, M + r, i + 1)) # ; lexical rules are indexed starting from M
     if not all(covered): # check whether all word positions are covered (if not => unknown token)
-        return f"(NOPARSE {' '.join(words)})"
+        return None
     # main parsing procedure for bottom-up deduction by matching syntactic rules
     while priority_queue:
         inv_w, i, j, k, r, ij = heappop(priority_queue)
@@ -170,7 +170,7 @@ def deduce(
                                 heappush(priority_queue, (-1 * ww * c[ii][i][children[0]] * w, ii, j, kk, rr, i))
     # sentence not parsable if the range [0, N) does not contain the root non-terming
     if nt_idx[start] not in c[0][N]:
-        return f"(NOPARSE {' '.join(words)})"
+        return None
     # build the derivation tree in PTB format from backtraces (top-down rule expansion)
     r, ij = backtrace[0][N][nt_idx[start]]
     stack = [(r, 0, ij, N)] # consists of (r, i, ij, j): left-side ranges at the top
@@ -202,9 +202,10 @@ def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str, start_sy
     """
     Parses the sentences one by one using syntactic and lexical rules
     """
-    # load grammar rules and binarize if necessary
-    lexical_rules = load_lexical_rules(path=lexical_rules_path)
-    syntactic_rules  = load_binarized_syntactic_rules(path=syntactic_rules_path)
+    # load grammar rules and determine the words
+    lexical_rules: list[LR] = load_lexical_rules(path=lexical_rules_path)
+    syntactic_rules: list[SR]  = load_syntactic_rules(path=syntactic_rules_path)
+    vocabulary: set[T] = set([lr.word for lr in lexical_rules])
     # preprocess the rules once before parsing 
     nt_idx, indexed_syntactic_rules, contained = preprocess_rules(lexical_rules=lexical_rules, syntactic_rules=syntactic_rules)
     # read and parse the sentences one by one
@@ -212,9 +213,18 @@ def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str, start_sy
         line = line.rstrip("\n")
         if not line.strip():
             break  # finish if reached an empty line (or enter pressed)
-        words: list[str] = line.strip().split()
+        words: list[T] = [T(w) for w in line.strip().split()]
+        # replace unknown words by UNK
+        original_words: list[T] | None = None
+        if unking:
+            original_words = words.copy()
+            unked_word_positions = []
+            for i, w in enumerate(original_words):
+                if w not in vocabulary:
+                    words[i] = T("UNK")
+                    unked_word_positions.append(i)
         # output the result of the deductive parsing algorithm
-        print(deduce(
+        parsed_ptb = deduce(
             words=words, 
             lexical_rules=lexical_rules,
             syntactic_rules=syntactic_rules,
@@ -222,4 +232,32 @@ def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str, start_sy
             indexed_syntactic_rules=indexed_syntactic_rules,
             contained=contained,
             start=start_symbol
-        ))
+        )
+        #
+        out = sys.stdout
+        #
+        if unking:
+            if parsed_ptb is None:
+                out.write(f"(NOPARSE {' '.join(original_words)})\n")
+            else:
+                no_unking_ptb = ""
+                current_unked_word_position_index = 0
+                j = 0
+                while j < len(parsed_ptb):
+                    if parsed_ptb.startswith(" UNK)", j) and current_unked_word_position_index < len(unked_word_positions):
+                        unked_word = original_words[unked_word_positions[current_unked_word_position_index]]
+                        current_unked_word_position_index += 1
+                        no_unking_ptb += f" {unked_word})"
+                        j += 5
+                    else:
+                        # add the current symbol
+                        no_unking_ptb += parsed_ptb[j]
+                        j += 1
+                out.write(no_unking_ptb + "\n")
+        else:
+            if parsed_ptb is None:
+                out.write(f"(NOPARSE {' '.join(words)})\n")
+            else:
+                out.write(parsed_ptb + "\n")
+
+

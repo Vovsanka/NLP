@@ -409,3 +409,186 @@ def test_parse_sentence_multiple_unknown_words_with_unking(tmp_path, monkeypatch
     assert "first" in output
     assert "second" in output
     assert "UNK" not in output
+
+
+# -------------------------
+# UNKING + SMOOTHING: UNKNOWN WORD → SIGNATURE
+# -------------------------
+def test_parse_sentence_unknown_word_with_smoothing(tmp_path, monkeypatch, capsys):
+    rules = tmp_path / "rules"
+    lexicon = tmp_path / "lexicon"
+
+    rules.write_text("")
+    # x9 → lowercase + digit → UNK-L-n
+    lexicon.write_text("A UNK-L-n 1.0\n")
+
+    monkeypatch.setattr(sys, "stdin", io.StringIO("x9\n"))
+
+    parse_sentences(
+        syntactic_rules_path=str(rules),
+        lexical_rules_path=str(lexicon),
+        start_symbol="A",
+        unking=True,
+        smoothing=True
+    )
+
+    output = capsys.readouterr().out.strip()
+    assert output == "(A x9)"
+
+
+# -------------------------
+# UNKING + SMOOTHING: SENTENCE-INITIAL CAPITALIZED → UNK-C-o
+# -------------------------
+def test_parse_sentence_initial_capitalized_with_smoothing(tmp_path, monkeypatch, capsys):
+    rules = tmp_path / "rules"
+    lexicon = tmp_path / "lexicon"
+
+    rules.write_text("")
+    # Hello → UNK-C-o (because i=0, so SC is NOT triggered)
+    lexicon.write_text("A UNK-C-o 1.0\n")
+
+    monkeypatch.setattr(sys, "stdin", io.StringIO("Hello\n"))
+
+    parse_sentences(
+        syntactic_rules_path=str(rules),
+        lexical_rules_path=str(lexicon),
+        start_symbol="A",
+        unking=True,
+        smoothing=True
+    )
+
+    output = capsys.readouterr().out.strip()
+    assert output == "(A Hello)"
+
+
+# -------------------------
+# UNKING + SMOOTHING: LOWERCASE WORD → UNK-L-o
+# -------------------------
+def test_parse_sentence_lowercase_with_smoothing(tmp_path, monkeypatch, capsys):
+    rules = tmp_path / "rules"
+    lexicon = tmp_path / "lexicon"
+
+    rules.write_text("")
+    # piano → ends with 'o' → UNK-L-o
+    lexicon.write_text("A UNK-L-o 1.0\n")
+
+    monkeypatch.setattr(sys, "stdin", io.StringIO("piano\n"))
+
+    parse_sentences(
+        syntactic_rules_path=str(rules),
+        lexical_rules_path=str(lexicon),
+        start_symbol="A",
+        unking=True,
+        smoothing=True
+    )
+
+    output = capsys.readouterr().out.strip()
+    assert output == "(A piano)"
+
+
+# -------------------------
+# UNKING + SMOOTHING: MULTIPLE UNKNOWN WORDS → DIFFERENT SIGNATURES
+# -------------------------
+def test_parse_sentence_multiple_unknown_words_with_smoothing(tmp_path, monkeypatch, capsys):
+    rules = tmp_path / "rules"
+    lexicon = tmp_path / "lexicon"
+
+    rules.write_text("S -> A B 1.0\n")
+
+    # Hello → UNK-C-o
+    # windy → UNK-L-y
+    lexicon.write_text(
+        "A UNK-C-o 1.0\n"
+        "B UNK-L-y 1.0\n"
+    )
+
+    monkeypatch.setattr(sys, "stdin", io.StringIO("Hello windy\n"))
+
+    parse_sentences(
+        syntactic_rules_path=str(rules),
+        lexical_rules_path=str(lexicon),
+        start_symbol="S",
+        unking=True,
+        smoothing=True
+    )
+
+    output = capsys.readouterr().out.strip()
+
+    assert "Hello" in output
+    assert "windy" in output
+    assert "UNK" not in output
+
+
+# -------------------------
+# UNKING + SMOOTHING: PERIOD → UNK-L-P
+# -------------------------
+def test_parse_sentence_unknown_with_period_smoothing(tmp_path, monkeypatch, capsys):
+    rules = tmp_path / "rules"
+    lexicon = tmp_path / "lexicon"
+
+    rules.write_text("")
+    # u.s.a. → UNK-L-P
+    lexicon.write_text("A UNK-L-P 1.0\n")
+
+    monkeypatch.setattr(sys, "stdin", io.StringIO("u.s.a.\n"))
+
+    parse_sentences(
+        syntactic_rules_path=str(rules),
+        lexical_rules_path=str(lexicon),
+        start_symbol="A",
+        unking=True,
+        smoothing=True
+    )
+
+    output = capsys.readouterr().out.strip()
+    assert output == "(A u.s.a.)"
+
+
+# -------------------------
+# UNKING + SMOOTHING: COMMA → UNK-L-C
+# -------------------------
+def test_parse_sentence_unknown_with_comma_smoothing(tmp_path, monkeypatch, capsys):
+    rules = tmp_path / "rules"
+    lexicon = tmp_path / "lexicon"
+
+    rules.write_text("")
+    # hello, → UNK-L-C
+    lexicon.write_text("A UNK-L-C 1.0\n")
+
+    monkeypatch.setattr(sys, "stdin", io.StringIO("hello,\n"))
+
+    parse_sentences(
+        syntactic_rules_path=str(rules),
+        lexical_rules_path=str(lexicon),
+        start_symbol="A",
+        unking=True,
+        smoothing=True
+    )
+
+    output = capsys.readouterr().out.strip()
+    assert output == "(A hello,)"
+
+
+# -------------------------
+# UNKING + SMOOTHING: DASH → UNK-L-H-y
+# -------------------------
+def test_parse_sentence_unknown_with_dash_smoothing(tmp_path, monkeypatch, capsys):
+    rules = tmp_path / "rules"
+    lexicon = tmp_path / "lexicon"
+
+    rules.write_text("")
+    # high-quality → UNK-L-H-y
+    lexicon.write_text("A UNK-L-H-y 1.0\n")
+
+    monkeypatch.setattr(sys, "stdin", io.StringIO("high-quality\n"))
+
+    parse_sentences(
+        syntactic_rules_path=str(rules),
+        lexical_rules_path=str(lexicon),
+        start_symbol="A",
+        unking=True,
+        smoothing=True
+    )
+
+    output = capsys.readouterr().out.strip()
+    assert output == "(A high-quality)"

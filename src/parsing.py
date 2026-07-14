@@ -224,7 +224,7 @@ def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str, start_sy
             unked_word_signatures: list[T] = []
             for i, w in enumerate(original_words):
                 if w not in vocabulary:
-                    words[i] = get_unknown_signature(smoothing)
+                    words[i] = get_unknown_signature(w, i, smoothing)
                     unked_word_positions.append(i)
                     unked_word_signatures.append(words[i])
         # output the result of the deductive parsing algorithm

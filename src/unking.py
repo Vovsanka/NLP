@@ -56,11 +56,42 @@ def unk_trees(threshold: int):
     out.flush()
 
 
-def get_unknown_signature(smoothing: bool = False) -> T:
+def get_unknown_signature(word: T, i: int, smoothing: bool) -> T:  # i = word index starting from 1
     unk_sign = "UNK"
-    if not smoothing:
+    if not smoothing or len(word) == 0:
         return T(unk_sign)
-    
+    # Letter suffix 
+    if word[0].isupper() and not any(c.islower() for c in word):
+        unk_sign += "-AC"
+    elif word[0].isupper() and i == 1:
+        unk_sign += "-SC"
+    elif word[0].isupper():
+        unk_sign += "-C"
+    elif any(c.islower() for c in word):
+        unk_sign += "-L"
+    elif any(c.isalpha() for c in word):
+        unk_sign += "-U"
+    else:
+        unk_sign += "-S"
+    # Number suffix
+    if all(c.isdigit() for c in word):
+        unk_sign += "-N"
+    elif any(c.isdigit() for c in word):
+        unk_sign += "-n"
+    # Dash suffix
+    if "-" in word:
+        unk_sign += "-H"
+    # Period suffix
+    if "." in word:
+        unk_sign += "-P"
+    # Comma suffix
+    if "," in word:
+        unk_sign += "-C"
+    # Word suffix
+    if len(word) > 3 and word[-1].isalpha():
+        unk_sign += "-" + word[-1].lower()
+    # 
     return T(unk_sign)
+
 
 

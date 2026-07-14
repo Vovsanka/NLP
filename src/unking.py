@@ -56,4 +56,11 @@ def unk_trees(threshold: int):
     out.flush()
 
 
+def get_unknown_signature(smoothing: bool = False) -> T:
+    unk_sign = "UNK"
+    if not smoothing:
+        return T(unk_sign)
+    
+    return T(unk_sign)
+
 

@@ -5,6 +5,8 @@ from parsy import string, regex, seq
 
 from models import SR, LR, NT, T
 
+from unking import get_unknown_signature
+
 
 TOKEN = regex(r"\S+").map(str) # non-terminal, terminal or probability
 ARROW = string("->")
@@ -198,7 +200,7 @@ def deduce(
         stack.append((r1, i, ij1, ij)) 
     return ptb.rstrip()
 
-def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str, start_symbol: str, unking: bool):
+def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str, start_symbol: str, unking: bool, smoothing: bool):
     """
     Parses the sentences one by one using syntactic and lexical rules
     """
@@ -218,11 +220,13 @@ def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str, start_sy
         original_words: list[T] | None = None
         if unking:
             original_words = words.copy()
-            unked_word_positions = []
+            unked_word_positions: list[int] = []
+            unked_word_signatures: list[T] = []
             for i, w in enumerate(original_words):
                 if w not in vocabulary:
-                    words[i] = T("UNK")
+                    words[i] = get_unknown_signature(smoothing)
                     unked_word_positions.append(i)
+                    unked_word_signatures.append(words[i])
         # output the result of the deductive parsing algorithm
         parsed_ptb = deduce(
             words=words, 
@@ -244,11 +248,14 @@ def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str, start_sy
                 current_unked_word_position_index = 0
                 j = 0
                 while j < len(parsed_ptb):
-                    if parsed_ptb.startswith(" UNK)", j) and current_unked_word_position_index < len(unked_word_positions):
+                    if current_unked_word_position_index < len(unked_word_positions) and \
+                       parsed_ptb.startswith(f" {unked_word_signatures[current_unked_word_position_index]})", j):
+                        # restore the original unknown word
                         unked_word = original_words[unked_word_positions[current_unked_word_position_index]]
+                        no_unking_ptb += f" {unked_word}"
+                        j += len(unked_word_signatures[current_unked_word_position_index]) + 1
+                        # 
                         current_unked_word_position_index += 1
-                        no_unking_ptb += f" {unked_word})"
-                        j += 5
                     else:
                         # add the current symbol
                         no_unking_ptb += parsed_ptb[j]

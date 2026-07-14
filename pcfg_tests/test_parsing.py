@@ -260,7 +260,8 @@ def test_parse_sentence_unknown_word_without_unking(tmp_path, monkeypatch, capsy
         syntactic_rules_path=str(rules),
         lexical_rules_path=str(lexicon),
         start_symbol="A",
-        unking=False
+        unking=False,
+        smoothing=False
     )
 
     output = capsys.readouterr().out.strip()
@@ -292,7 +293,8 @@ def test_parse_sentence_unknown_word_with_unking(tmp_path, monkeypatch, capsys):
         syntactic_rules_path=str(rules),
         lexical_rules_path=str(lexicon),
         start_symbol="A",
-        unking=True
+        unking=True,
+        smoothing=False
     )
 
     output = capsys.readouterr().out.strip()
@@ -325,7 +327,8 @@ def test_parse_sentence_known_word_not_unked(tmp_path, monkeypatch, capsys):
         syntactic_rules_path=str(rules),
         lexical_rules_path=str(lexicon),
         start_symbol="A",
-        unking=True
+        unking=True,
+        smoothing=False
     )
 
     output = capsys.readouterr().out.strip()
@@ -360,7 +363,8 @@ def test_parse_sentence_mixed_known_unknown_with_unking(tmp_path, monkeypatch, c
         syntactic_rules_path=str(rules),
         lexical_rules_path=str(lexicon),
         start_symbol="S",
-        unking=True
+        unking=True,
+        smoothing=False
     )
 
     output = capsys.readouterr().out.strip()
@@ -396,7 +400,8 @@ def test_parse_sentence_multiple_unknown_words_with_unking(tmp_path, monkeypatch
         syntactic_rules_path=str(rules),
         lexical_rules_path=str(lexicon),
         start_symbol="S",
-        unking=True
+        unking=True,
+        smoothing=False
     )
 
     output = capsys.readouterr().out.strip()

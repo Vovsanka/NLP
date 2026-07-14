@@ -78,12 +78,21 @@ def cmd_parse(args: list):
     # print("Output: best parse tree (in Penn Treebank [PTB] format)")
     start_symbol = "ROOT"
     unking: bool = False
+    smoothing: bool = False
     while args and args[0].startswith("-"):
         if args[0] in ("-u", "--unking"):
             unking = True
             args = args[1:]
+        elif args[0] in ("-s", "--smoothing"):
+            smoothing = True
+            args = args[1:]
         elif len(args) > 1 and args[0] in ("-i", "--initial-nonterminal"):
             start_symbol = args[1]
+            args = args[2:]
+        elif len(args) > 1 and args[0] in ("-p", "--paradigm"):
+            paradigm = args[1]
+            if paradigm != "deductive":
+                exit_not_implemented()
             args = args[2:]
         else:
             exit_not_implemented()
@@ -98,7 +107,8 @@ def cmd_parse(args: list):
         syntactic_rules_path=syntactic_rules_path,
         lexical_rules_path=lexical_rules_path,
         start_symbol=start_symbol,
-        unking=unking 
+        unking=unking,
+        smoothing=smoothing
     )
 
 def cmd_binarise(args: list):

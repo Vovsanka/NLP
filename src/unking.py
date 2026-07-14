@@ -5,7 +5,7 @@ from induction import parse_ptb
 from models import SE, T, NT
 
 
-def unk_trees(threshold: int):
+def unk_trees(threshold: int, smoothing: bool = False):
     #
     word_counter: dict[T, int] = {}
     #
@@ -32,15 +32,18 @@ def unk_trees(threshold: int):
         # assert str(se) == line
         accumulate_words(se)
         syntactic_expressions.append(se)
-    #
+    # leaf number indexed from 1
+    leaf = 0 
     def replace_rare_words_with_unk(se: SE) -> SE:
+        nonlocal leaf
         # preterminal (NT -> T)
         if len(se.children) == 1 and isinstance(se.children[0], T):
+            leaf += 1
             word = se.children[0]
             if word not in word_counter or word_counter[word] <= threshold:
                 return SE(
                     label=se.label,
-                    children=[T("UNK")]
+                    children=[get_unknown_signature(word=word, i=leaf, smoothing=smoothing)]
                 )
             else:
                 return se

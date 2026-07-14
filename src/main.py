@@ -27,11 +27,16 @@ def print_help():
     print("                     PCFG defined by RULES and LEXICON. Sentences must be")
     print("                     whitespace-separated tokens. For each sentence, output")
     print("                     the highest-probability parse tree or a NOPARSE tree.")
+    print("         -p --paradigm =P")
+    print("                     Parsing paradigm.")
+    print("                     Default: deductive.")
     print("         -i --initial-nonterminal =N")
     print("                     Define N as the start non -terminal.")
     print("                     Default: ROOT.")
     print("         -u --unking")
-    print("                     Replace unknown words with UNK")
+    print("                     Replace unknown words with UNK.")
+    print("         -s --smoothing")
+    print("                     Replace unknown words with smoothing.")
     print()
     print("  binarise [OPTIONS]")
     print("                     Binarise a sequence of constituent trees read from stdin.")
@@ -50,6 +55,12 @@ def print_help():
     print("  unk [OPTIONS]")
     print("                     Trivial unking for a sequence of constituent trees read from stdin.")
     print("                     Output of the trees obtained through trivial unking to stdout.")
+    print("         -t ---threshold =T")
+    print("                     Threshold of absolute frequency for unking")
+    print()
+    print("  smooth [OPTIONS]")
+    print("                     Unking with smoothing for a sequence of constituent trees read from stdin.")
+    print("                     Output of the trees obtained through smoothing to stdout.")
     print("         -t ---threshold =T")
     print("                     Threshold of absolute frequency for unking")
     print()
@@ -149,6 +160,20 @@ def cmd_unk(args: list):
 
     unk_trees(threshold=threshold)
 
+def cmd_smooth(args: list):
+    threshold = 0
+    while args and args[0].startswith("-"):
+        if len(args) > 1 and args[0] in ("-t", "--threshold"):
+            threshold = int(args[1])
+            args = args[2:]
+        else:
+            exit_not_implemented()
+        
+    if len(args) != 0:
+        exit_not_implemented()
+
+    unk_trees(threshold=threshold, smoothing=True)
+
 
 
 def main():
@@ -179,6 +204,10 @@ def main():
 
     if cmd == "unk":
         cmd_unk(sys.argv[2:])
+        return 
+    
+    if cmd == "smooth":
+        cmd_smooth(sys.argv[2:])
         return 
 
     # Unknown command

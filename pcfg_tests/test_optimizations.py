@@ -1,11 +1,14 @@
 import pytest
+import os
+
+from models import SR, LR, NT, T
 
 from parsing import (
     preprocess_rules,
     deduce,
 )
+from outside import compute_outside_for_nonterminals
 
-from models import SR, LR, NT, T
 
 
 # --------------------------------------------------
@@ -233,3 +236,141 @@ def test_pruning_parameters_do_not_crash(threshold, rank):
     )
 
     assert result == "(A a)"
+
+
+
+def read_outside_file(path):
+    outside = {}
+    with open(path, "r") as f:
+        for line in f:
+            nt, weight = line.split()
+            outside[nt] = float(weight)
+    return outside
+
+
+def test_outside_binary_rule(tmp_path):
+    """
+    Grammar:
+
+        S -> NP VP 1.0
+        NP -> dog 0.5
+        VP -> runs 0.8
+
+    Expected:
+
+        out(S)  = 1.0
+        out(NP) = 1.0 * 1.0 * 0.8 = 0.8
+        out(VP) = 1.0 * 1.0 * 0.5 = 0.5
+    """
+
+    syntactic_rules = tmp_path / "grammar.rules"
+    lexical_rules = tmp_path / "grammar.lexicon"
+
+    syntactic_rules.write_text(
+        "S -> NP VP 1.0\n"
+    )
+
+    lexical_rules.write_text(
+        "NP dog 0.5\n"
+        "VP runs 0.8\n"
+    )
+
+    prefix = str(tmp_path / "grammar")
+
+    compute_outside_for_nonterminals(
+        str(syntactic_rules),
+        str(lexical_rules),
+        "S",
+        prefix
+    )
+
+    outside = read_outside_file(prefix + ".outside")
+
+    assert outside["S"] == 1.0
+    assert outside["NP"] == 0.8
+    assert outside["VP"] == 0.5
+
+
+def test_outside_unary_rule(tmp_path):
+    """
+    Grammar:
+
+        S -> NP 0.7
+        NP -> dog 0.5
+
+    Expected:
+
+        out(S)  = 1.0
+        out(NP) = 0.7
+    """
+
+    syntactic_rules = tmp_path / "grammar.rules"
+    lexical_rules = tmp_path / "grammar.lexicon"
+
+    syntactic_rules.write_text(
+        "S -> NP 0.7\n"
+    )
+
+    lexical_rules.write_text(
+        "NP dog 0.5\n"
+    )
+
+    prefix = str(tmp_path / "grammar")
+
+    compute_outside_for_nonterminals(
+        str(syntactic_rules),
+        str(lexical_rules),
+        "S",
+        prefix
+    )
+
+    outside = read_outside_file(prefix + ".outside")
+
+    assert outside["S"] == 1.0
+    assert outside["NP"] == 0.7
+
+
+def test_outside_multiple_contexts(tmp_path):
+    """
+    Grammar:
+
+        S -> A B 0.5
+        S -> C D 0.9
+
+        A -> a 1.0
+        B -> b 1.0
+        C -> c 1.0
+        D -> d 1.0
+    """
+
+    syntactic_rules = tmp_path / "grammar.rules"
+    lexical_rules = tmp_path / "grammar.lexicon"
+
+    syntactic_rules.write_text(
+        "S -> A B 0.5\n"
+        "S -> C D 0.9\n"
+    )
+
+    lexical_rules.write_text(
+        "A a 1.0\n"
+        "B b 1.0\n"
+        "C c 1.0\n"
+        "D d 1.0\n"
+    )
+
+    prefix = str(tmp_path / "grammar")
+
+    compute_outside_for_nonterminals(
+        str(syntactic_rules),
+        str(lexical_rules),
+        "S",
+        prefix
+    )
+
+    outside = read_outside_file(prefix + ".outside")
+
+    assert outside["S"] == 1.0
+    assert outside["A"] == 0.5
+    assert outside["B"] == 0.5
+    assert outside["C"] == 0.9
+    assert outside["D"] == 0.9

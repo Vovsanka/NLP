@@ -5,6 +5,7 @@ from induction import induce_grammar
 from parsing import parse_sentences
 from binarization import binarise_trees, debinarise_trees
 from unking import unk_trees
+from outside import compute_outside_for_nonterminals
 
 
 EXIT_NOT_IMPLEMENTED = 22
@@ -67,6 +68,20 @@ def print_help():
     print("                     Output of the trees obtained through smoothing to stdout.")
     print("         -t --threshold =T")
     print("                     Threshold of absolute frequency for unking")
+    print()
+    print("  smooth [OPTIONS]")
+    print("                     Unking with smoothing for a sequence of constituent trees read from stdin.")
+    print("                     Output of the trees obtained through smoothing to stdout.")
+    print("         -t --threshold =T")
+    print("                     Threshold of absolute frequency for unking")
+    print()
+    print("  outside [ OPTIONS ] RULES LEXICON [GRAMMAR]")
+    print("                     Computes Viterbi outside weights for each non-terminal of the grammar.")
+    print("                     Output the non-terminals and the weights to stdout.")
+    print("                     If GRAMMAR is given, outpus to GRAMMAR.outside")
+    print("         -i --initial-nonterminal =N")
+    print("                     Define N as the start non -terminal.")
+    print("                     Default: ROOT.")
     print()
     print("Run 'pcfg_tool COMMAND' to execute a specific function.")
 
@@ -188,6 +203,33 @@ def cmd_smooth(args: list):
 
     unk_trees(threshold=threshold, smoothing=True)
 
+def cmd_outside(args: list):
+    start_symbol = "ROOT"
+    while args and args[0].startswith("-"):
+        if len(args) > 1 and args[0] in ("-i", "--initial-nonterminal"):
+            start_symbol = args[1]
+            args = args[2:]
+        else:
+            exit_not_implemented()
+    
+    if len(args) < 2:
+        exit_not_implemented()
+
+    syntactic_rules_path = args[0]
+    lexical_rules_path = args[1]
+    args = args[2:]
+
+    if len(args) > 1:
+        exit_not_implemented()
+    
+    grammar_prefix = args[0] if len(args) == 1 else None
+
+    compute_outside_for_nonterminals(
+        syntactic_rules_path = syntactic_rules_path,
+        lexical_rules_path = lexical_rules_path,
+        start_symbol=start_symbol,
+        grammar_prefix=grammar_prefix
+    )
 
 
 def main():
@@ -222,6 +264,10 @@ def main():
     
     if cmd == "smooth":
         cmd_smooth(sys.argv[2:])
+        return 
+    
+    if cmd == "outside":
+        cmd_outside(sys.argv[2:])
         return 
 
     # Unknown command

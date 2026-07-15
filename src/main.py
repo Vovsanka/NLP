@@ -37,6 +37,10 @@ def print_help():
     print("                     Replace unknown words with UNK.")
     print("         -s --smoothing")
     print("                     Replace unknown words with smoothing.")
+    print("         -t --threshold-beam = THRESHOLD")
+    print("                     Beam search with threshold.")
+    print("         -r --rank-beam =RANK")
+    print("                     Beam search with a beam of constant size.")
     print()
     print("  binarise [OPTIONS]")
     print("                     Binarise a sequence of constituent trees read from stdin.")
@@ -55,13 +59,13 @@ def print_help():
     print("  unk [OPTIONS]")
     print("                     Trivial unking for a sequence of constituent trees read from stdin.")
     print("                     Output of the trees obtained through trivial unking to stdout.")
-    print("         -t ---threshold =T")
+    print("         -t --threshold =T")
     print("                     Threshold of absolute frequency for unking")
     print()
     print("  smooth [OPTIONS]")
     print("                     Unking with smoothing for a sequence of constituent trees read from stdin.")
     print("                     Output of the trees obtained through smoothing to stdout.")
-    print("         -t ---threshold =T")
+    print("         -t --threshold =T")
     print("                     Threshold of absolute frequency for unking")
     print()
     print("Run 'pcfg_tool COMMAND' to execute a specific function.")
@@ -90,6 +94,8 @@ def cmd_parse(args: list):
     start_symbol = "ROOT"
     unking: bool = False
     smoothing: bool = False
+    beam_threshold: float  = 0
+    beam_rank: int = 99999 # infinity
     while args and args[0].startswith("-"):
         if args[0] in ("-u", "--unking"):
             unking = True
@@ -105,6 +111,12 @@ def cmd_parse(args: list):
             if paradigm != "deductive":
                 exit_not_implemented()
             args = args[2:]
+        elif len(args) > 1 and args[0] in ("-t", "--threshold-beam"):
+            beam_threshold = float(args[1])
+            args = args[2:]
+        elif len(args) > 1 and args[0] in ("-r", "--rank-beam"):
+            beam_rank = int(args[1])
+            args = args[2:]
         else:
             exit_not_implemented()
         
@@ -119,7 +131,9 @@ def cmd_parse(args: list):
         lexical_rules_path=lexical_rules_path,
         start_symbol=start_symbol,
         unking=unking,
-        smoothing=smoothing
+        smoothing=smoothing,
+        beam_threshold=beam_threshold,
+        beam_rank=beam_rank
     )
 
 def cmd_binarise(args: list):

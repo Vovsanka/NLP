@@ -13,6 +13,9 @@ from parsing import (
 
 from models import SR, LR, NT, T
 
+BEAM_THRESHOLD = 0
+BEAM_RANK = 99999
+
 
 # -------------------------
 # HELPER TO RUN DEDUCE WITH PREPROCESSING
@@ -30,7 +33,9 @@ def _run_deduce(words, lexical, syntactic, start):
         nt_idx=nt_idx,
         indexed_syntactic_rules=indexed_syntactic_rules,
         contained=contained,
-        start=start
+        start=start,
+        beam_threshold=BEAM_THRESHOLD,
+        beam_rank=BEAM_RANK
     )
 
 
@@ -261,7 +266,9 @@ def test_parse_sentence_unknown_word_without_unking(tmp_path, monkeypatch, capsy
         lexical_rules_path=str(lexicon),
         start_symbol="A",
         unking=False,
-        smoothing=False
+        smoothing=False,
+        beam_threshold=BEAM_THRESHOLD,
+        beam_rank=BEAM_RANK
     )
 
     output = capsys.readouterr().out.strip()
@@ -294,7 +301,9 @@ def test_parse_sentence_unknown_word_with_unking(tmp_path, monkeypatch, capsys):
         lexical_rules_path=str(lexicon),
         start_symbol="A",
         unking=True,
-        smoothing=False
+        smoothing=False,
+        beam_threshold=BEAM_THRESHOLD,
+        beam_rank=BEAM_RANK
     )
 
     output = capsys.readouterr().out.strip()
@@ -328,7 +337,9 @@ def test_parse_sentence_known_word_not_unked(tmp_path, monkeypatch, capsys):
         lexical_rules_path=str(lexicon),
         start_symbol="A",
         unking=True,
-        smoothing=False
+        smoothing=False,
+        beam_threshold=BEAM_THRESHOLD,
+        beam_rank=BEAM_RANK
     )
 
     output = capsys.readouterr().out.strip()
@@ -364,7 +375,9 @@ def test_parse_sentence_mixed_known_unknown_with_unking(tmp_path, monkeypatch, c
         lexical_rules_path=str(lexicon),
         start_symbol="S",
         unking=True,
-        smoothing=False
+        smoothing=False,
+        beam_threshold=BEAM_THRESHOLD,
+        beam_rank=BEAM_RANK
     )
 
     output = capsys.readouterr().out.strip()
@@ -401,7 +414,9 @@ def test_parse_sentence_multiple_unknown_words_with_unking(tmp_path, monkeypatch
         lexical_rules_path=str(lexicon),
         start_symbol="S",
         unking=True,
-        smoothing=False
+        smoothing=False,
+        beam_threshold=BEAM_THRESHOLD,
+        beam_rank=BEAM_RANK
     )
 
     output = capsys.readouterr().out.strip()
@@ -429,7 +444,9 @@ def test_parse_sentence_unknown_word_with_smoothing(tmp_path, monkeypatch, capsy
         lexical_rules_path=str(lexicon),
         start_symbol="A",
         unking=True,
-        smoothing=True
+        smoothing=True,
+        beam_threshold=BEAM_THRESHOLD,
+        beam_rank=BEAM_RANK
     )
 
     output = capsys.readouterr().out.strip()
@@ -454,7 +471,9 @@ def test_parse_sentence_initial_capitalized_with_smoothing(tmp_path, monkeypatch
         lexical_rules_path=str(lexicon),
         start_symbol="A",
         unking=True,
-        smoothing=True
+        smoothing=True,
+        beam_threshold=BEAM_THRESHOLD,
+        beam_rank=BEAM_RANK
     )
 
     output = capsys.readouterr().out.strip()
@@ -479,7 +498,9 @@ def test_parse_sentence_lowercase_with_smoothing(tmp_path, monkeypatch, capsys):
         lexical_rules_path=str(lexicon),
         start_symbol="A",
         unking=True,
-        smoothing=True
+        smoothing=True,
+        beam_threshold=BEAM_THRESHOLD,
+        beam_rank=BEAM_RANK
     )
 
     output = capsys.readouterr().out.strip()
@@ -509,7 +530,9 @@ def test_parse_sentence_multiple_unknown_words_with_smoothing(tmp_path, monkeypa
         lexical_rules_path=str(lexicon),
         start_symbol="S",
         unking=True,
-        smoothing=True
+        smoothing=True,
+        beam_threshold=BEAM_THRESHOLD,
+        beam_rank=BEAM_RANK
     )
 
     output = capsys.readouterr().out.strip()
@@ -537,7 +560,9 @@ def test_parse_sentence_unknown_with_period_smoothing(tmp_path, monkeypatch, cap
         lexical_rules_path=str(lexicon),
         start_symbol="A",
         unking=True,
-        smoothing=True
+        smoothing=True,
+        beam_threshold=BEAM_THRESHOLD,
+        beam_rank=BEAM_RANK
     )
 
     output = capsys.readouterr().out.strip()
@@ -562,7 +587,9 @@ def test_parse_sentence_unknown_with_comma_smoothing(tmp_path, monkeypatch, caps
         lexical_rules_path=str(lexicon),
         start_symbol="A",
         unking=True,
-        smoothing=True
+        smoothing=True,
+        beam_threshold=BEAM_THRESHOLD,
+        beam_rank=BEAM_RANK
     )
 
     output = capsys.readouterr().out.strip()
@@ -587,7 +614,9 @@ def test_parse_sentence_unknown_with_dash_smoothing(tmp_path, monkeypatch, capsy
         lexical_rules_path=str(lexicon),
         start_symbol="A",
         unking=True,
-        smoothing=True
+        smoothing=True,
+        beam_threshold=BEAM_THRESHOLD,
+        beam_rank=BEAM_RANK
     )
 
     output = capsys.readouterr().out.strip()

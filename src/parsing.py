@@ -1,5 +1,5 @@
 import sys
-from heapq import heappush, heappop
+from sortedcontainers import SortedList
 
 from parsy import string, regex, seq
 
@@ -105,7 +105,9 @@ def deduce(
         nt_idx: dict[NT, int], 
         indexed_syntactic_rules: list[tuple], 
         contained: list[list[int]],
-        start
+        start: NT,
+        beam_threshold: float,
+        beam_rank: int
     ) -> str | None:
     """
     Deductive parsing algorithm producing a derivation tree in PTB format for the given sentense
@@ -139,20 +141,38 @@ def deduce(
             word_positions[w] = []
         word_positions[w].append(i)
     # initialize the priority queue with lexical rules
-    priority_queue = [] # consists of (-weight, i, j, k, r, ij): negative weight trick to reverse the priority order; ij is a range split position
+    priority_queue = SortedList() # consists of (weight, i, j, k, r, ij)
+    def priority_queue_pop_best():
+        return priority_queue.pop(-1) # return the element with the largest weight
+    def priority_queue_pop_worst():
+        return priority_queue.pop(0)
+    def get_max_weight():
+        return priority_queue[-1][0]
+    def get_min_weight():
+        return priority_queue[0][0]
+    #
     covered = [False] * N 
     for r, lr in enumerate(lexical_rules):
         k = nt_idx[lr.label]
         if lr.word in word_set: 
             for i in word_positions[lr.word]:
                 covered[i] = True
-                heappush(priority_queue, (-lr.weight, i, i + 1, k, M + r, i + 1)) # ; lexical rules are indexed starting from M
+                priority_queue.add((lr.weight, i, i + 1, k, M + r, i + 1)) # ; lexical rules are indexed starting from M
     if not all(covered): # check whether all word positions are covered (if not => unknown token)
         return None
+    #
+    def prune():
+        if not priority_queue:
+            return
+        best_w = get_max_weight()
+        m = beam_threshold * best_w 
+        while priority_queue and get_min_weight() <= m: 
+            priority_queue_pop_worst()
+        if len(priority_queue) > beam_rank:
+            del priority_queue[:-beam_rank]
     # main parsing procedure for bottom-up deduction by matching syntactic rules
     while priority_queue:
-        inv_w, i, j, k, r, ij = heappop(priority_queue)
-        w = -inv_w
+        w, i, j, k, r, ij = priority_queue_pop_best()
         if k not in c[i][j] or w > c[i][j][k]: # check if it is the best probability=weight for the range [i, j) and non-terminal indexed by k
             c[i][j][k] = w
             backtrace[i][j][k] = (r, ij)
@@ -160,16 +180,17 @@ def deduce(
             for rr in contained[k]:
                 ww, kk, children = indexed_syntactic_rules[rr] # k in children
                 if len(children) == 1: # chain rule
-                    heappush(priority_queue, (ww*inv_w, i, j, kk, rr, j)) # range splitting position is escaped as the right bound j
+                    priority_queue.add((ww * w, i, j, kk, rr, j)) # range splitting position is escaped as the right bound j
                 else: # len(children) == 2
                     if children[0] == k: # left child
                         for jj in range(j + 1, N + 1): # check all possible positions for right bound extension
                             if children[1] in c[j][jj]:
-                                heappush(priority_queue, (-1 * ww * w * c[j][jj][children[1]], i, jj, kk, rr, j))
+                                priority_queue.add((ww * w * c[j][jj][children[1]], i, jj, kk, rr, j))
                     if children[1] == k: # right child
                         for ii in range(0, i): # check all possible positions for left bound extension
                             if children[0] in c[ii][i]:
-                                heappush(priority_queue, (-1 * ww * c[ii][i][children[0]] * w, ii, j, kk, rr, i))
+                                priority_queue.add((ww * c[ii][i][children[0]] * w, ii, j, kk, rr, i))
+            prune()
     # sentence not parsable if the range [0, N) does not contain the root non-terming
     if nt_idx[start] not in c[0][N]:
         return None
@@ -200,7 +221,15 @@ def deduce(
         stack.append((r1, i, ij1, ij)) 
     return ptb.rstrip()
 
-def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str, start_symbol: str, unking: bool, smoothing: bool):
+def parse_sentences(
+        syntactic_rules_path: str, 
+        lexical_rules_path: str, 
+        start_symbol: str, 
+        unking: bool, 
+        smoothing: bool,
+        beam_threshold: float,
+        beam_rank: int    
+    ):
     """
     Parses the sentences one by one using syntactic and lexical rules
     """
@@ -235,7 +264,9 @@ def parse_sentences(syntactic_rules_path: str, lexical_rules_path: str, start_sy
             nt_idx=nt_idx,
             indexed_syntactic_rules=indexed_syntactic_rules,
             contained=contained,
-            start=start_symbol
+            start=start_symbol,
+            beam_threshold=beam_threshold,
+            beam_rank=beam_rank
         )
         #
         out = sys.stdout

@@ -6,9 +6,11 @@ from models import SR, LR, NT, T
 from parsing import (
     preprocess_rules,
     deduce,
+    load_lexical_rules,
+    load_syntactic_rules,
+    load_indexed_outside
 )
 from outside import compute_outside_for_nonterminals
-
 
 
 # --------------------------------------------------
@@ -39,7 +41,8 @@ def _run_deduce_with_beam(
         contained=contained,
         start=start,
         beam_threshold=beam_threshold,
-        beam_rank=beam_rank
+        beam_rank=beam_rank,
+        out={}
     )
 
 
@@ -374,3 +377,201 @@ def test_outside_multiple_contexts(tmp_path):
     assert outside["B"] == 0.5
     assert outside["C"] == 0.9
     assert outside["D"] == 0.9
+
+
+
+def test_load_indexed_outside(tmp_path):
+    """
+    Test loading grammar.outside into indexed representation.
+
+    outside file:
+        S 1.0
+        NP 0.8
+        VP 0.5
+
+    nt_idx:
+        S  -> 0
+        NP -> 1
+        VP -> 2
+        X  -> 3
+
+    Expected:
+        [1.0, 0.8, 0.5, 0.0]
+    """
+
+    outside_file = tmp_path / "grammar.outside"
+
+    outside_file.write_text(
+        "S 1.0\n"
+        "NP 0.8\n"
+        "VP 0.5\n"
+    )
+
+    nt_idx = {
+        "S": 0,
+        "NP": 1,
+        "VP": 2,
+        "X": 3
+    }
+
+    indexed_outside = load_indexed_outside(
+        str(outside_file),
+        nt_idx
+    )
+
+    assert indexed_outside == [
+        1.0,
+        0.8,
+        0.5,
+        0.0
+    ]
+
+
+def create_simple_grammar(tmp_path):
+    """
+    Grammar:
+
+        S -> NP VP 1.0
+        VP -> V 1.0
+
+        NP -> dog 1.0
+        V -> runs 1.0
+
+    Sentence:
+
+        dog runs
+    """
+
+    syntactic_rules = tmp_path / "grammar.rules"
+    lexical_rules = tmp_path / "grammar.lexicon"
+
+    syntactic_rules.write_text(
+        "S -> NP VP 1.0\n"
+        "VP -> V 1.0\n"
+    )
+
+    lexical_rules.write_text(
+        "NP dog 1.0\n"
+        "V runs 1.0\n"
+    )
+
+    return syntactic_rules, lexical_rules
+
+
+def test_deduce_with_astar(tmp_path):
+    """
+    Parsing with Viterbi outside heuristic.
+
+    The result must be identical to normal parsing.
+    """
+
+    syntactic_file, lexical_file = create_simple_grammar(tmp_path)
+
+    outside_file = tmp_path / "grammar.outside"
+
+    outside_file.write_text(
+        "S 1.0\n"
+        "NP 1.0\n"
+        "VP 1.0\n"
+        "V 1.0\n"
+    )
+
+
+    lexical_rules = load_lexical_rules(
+        str(lexical_file)
+    )
+
+    syntactic_rules = load_syntactic_rules(
+        str(syntactic_file)
+    )
+
+    nt_idx, indexed_rules, contained = preprocess_rules(
+        lexical_rules,
+        syntactic_rules
+    )
+
+    indexed_outside = load_indexed_outside(
+        str(outside_file),
+        nt_idx
+    )
+
+    tree = deduce(
+        words=["dog", "runs"],
+        lexical_rules=lexical_rules,
+        syntactic_rules=syntactic_rules,
+        nt_idx=nt_idx,
+        indexed_syntactic_rules=indexed_rules,
+        contained=contained,
+        start="S",
+        beam_threshold=0,
+        beam_rank=99999,
+        out=indexed_outside
+    )
+
+    assert tree == "(S (NP dog) (VP (V runs)))"
+
+
+def test_astar_and_normal_return_same_tree(tmp_path):
+    """
+    A* changes only the search order.
+    It must not change the Viterbi result.
+    """
+
+    syntactic_file, lexical_file = create_simple_grammar(tmp_path)
+
+    outside_file = tmp_path / "grammar.outside"
+
+    outside_file.write_text(
+        "S 1.0\n"
+        "NP 0.9\n"
+        "VP 0.8\n"
+        "V 0.7\n"
+    )
+
+    lexical_rules = load_lexical_rules(
+        str(lexical_file)
+    )
+
+    syntactic_rules = load_syntactic_rules(
+        str(syntactic_file)
+    )
+
+    nt_idx, indexed_rules, contained = preprocess_rules(
+        lexical_rules,
+        syntactic_rules
+    )
+
+    outside = load_indexed_outside(
+        str(outside_file),
+        nt_idx
+    )
+
+    normal_tree = deduce(
+        words=["dog", "runs"],
+        lexical_rules=lexical_rules,
+        syntactic_rules=syntactic_rules,
+        nt_idx=nt_idx,
+        indexed_syntactic_rules=indexed_rules,
+        contained=contained,
+        start="S",
+        beam_threshold=0,
+        beam_rank=99999,
+        out=[]
+    )
+
+
+    astar_tree = deduce(
+        words=["dog", "runs"],
+        lexical_rules=lexical_rules,
+        syntactic_rules=syntactic_rules,
+        nt_idx=nt_idx,
+        indexed_syntactic_rules=indexed_rules,
+        contained=contained,
+        start="S",
+        beam_threshold=0,
+        beam_rank=99999,
+        out=outside
+    )
+
+
+    assert normal_tree == astar_tree

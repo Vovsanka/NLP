@@ -15,6 +15,8 @@ from models import SR, LR, NT, T
 
 BEAM_THRESHOLD = 0
 BEAM_RANK = 99999
+ASTAR_PATH = ""
+OUTSIDE = {}
 
 
 # -------------------------
@@ -35,7 +37,8 @@ def _run_deduce(words, lexical, syntactic, start):
         contained=contained,
         start=start,
         beam_threshold=BEAM_THRESHOLD,
-        beam_rank=BEAM_RANK
+        beam_rank=BEAM_RANK,
+        out=OUTSIDE
     )
 
 
@@ -268,7 +271,8 @@ def test_parse_sentence_unknown_word_without_unking(tmp_path, monkeypatch, capsy
         unking=False,
         smoothing=False,
         beam_threshold=BEAM_THRESHOLD,
-        beam_rank=BEAM_RANK
+        beam_rank=BEAM_RANK,
+        astar_path=ASTAR_PATH
     )
 
     output = capsys.readouterr().out.strip()
@@ -303,7 +307,8 @@ def test_parse_sentence_unknown_word_with_unking(tmp_path, monkeypatch, capsys):
         unking=True,
         smoothing=False,
         beam_threshold=BEAM_THRESHOLD,
-        beam_rank=BEAM_RANK
+        beam_rank=BEAM_RANK,
+        astar_path=ASTAR_PATH
     )
 
     output = capsys.readouterr().out.strip()
@@ -339,7 +344,8 @@ def test_parse_sentence_known_word_not_unked(tmp_path, monkeypatch, capsys):
         unking=True,
         smoothing=False,
         beam_threshold=BEAM_THRESHOLD,
-        beam_rank=BEAM_RANK
+        beam_rank=BEAM_RANK,
+        astar_path=ASTAR_PATH
     )
 
     output = capsys.readouterr().out.strip()
@@ -377,7 +383,8 @@ def test_parse_sentence_mixed_known_unknown_with_unking(tmp_path, monkeypatch, c
         unking=True,
         smoothing=False,
         beam_threshold=BEAM_THRESHOLD,
-        beam_rank=BEAM_RANK
+        beam_rank=BEAM_RANK,
+        astar_path=ASTAR_PATH
     )
 
     output = capsys.readouterr().out.strip()
@@ -416,7 +423,8 @@ def test_parse_sentence_multiple_unknown_words_with_unking(tmp_path, monkeypatch
         unking=True,
         smoothing=False,
         beam_threshold=BEAM_THRESHOLD,
-        beam_rank=BEAM_RANK
+        beam_rank=BEAM_RANK,
+        astar_path=ASTAR_PATH
     )
 
     output = capsys.readouterr().out.strip()
@@ -446,7 +454,8 @@ def test_parse_sentence_unknown_word_with_smoothing(tmp_path, monkeypatch, capsy
         unking=True,
         smoothing=True,
         beam_threshold=BEAM_THRESHOLD,
-        beam_rank=BEAM_RANK
+        beam_rank=BEAM_RANK,
+        astar_path=ASTAR_PATH
     )
 
     output = capsys.readouterr().out.strip()
@@ -473,7 +482,8 @@ def test_parse_sentence_initial_capitalized_with_smoothing(tmp_path, monkeypatch
         unking=True,
         smoothing=True,
         beam_threshold=BEAM_THRESHOLD,
-        beam_rank=BEAM_RANK
+        beam_rank=BEAM_RANK,
+        astar_path=ASTAR_PATH
     )
 
     output = capsys.readouterr().out.strip()
@@ -500,7 +510,8 @@ def test_parse_sentence_lowercase_with_smoothing(tmp_path, monkeypatch, capsys):
         unking=True,
         smoothing=True,
         beam_threshold=BEAM_THRESHOLD,
-        beam_rank=BEAM_RANK
+        beam_rank=BEAM_RANK,
+        astar_path=ASTAR_PATH
     )
 
     output = capsys.readouterr().out.strip()
@@ -532,7 +543,8 @@ def test_parse_sentence_multiple_unknown_words_with_smoothing(tmp_path, monkeypa
         unking=True,
         smoothing=True,
         beam_threshold=BEAM_THRESHOLD,
-        beam_rank=BEAM_RANK
+        beam_rank=BEAM_RANK,
+        astar_path=ASTAR_PATH
     )
 
     output = capsys.readouterr().out.strip()
@@ -562,7 +574,8 @@ def test_parse_sentence_unknown_with_period_smoothing(tmp_path, monkeypatch, cap
         unking=True,
         smoothing=True,
         beam_threshold=BEAM_THRESHOLD,
-        beam_rank=BEAM_RANK
+        beam_rank=BEAM_RANK,
+        astar_path=ASTAR_PATH
     )
 
     output = capsys.readouterr().out.strip()
@@ -589,7 +602,8 @@ def test_parse_sentence_unknown_with_comma_smoothing(tmp_path, monkeypatch, caps
         unking=True,
         smoothing=True,
         beam_threshold=BEAM_THRESHOLD,
-        beam_rank=BEAM_RANK
+        beam_rank=BEAM_RANK,
+        astar_path=ASTAR_PATH
     )
 
     output = capsys.readouterr().out.strip()
@@ -616,8 +630,11 @@ def test_parse_sentence_unknown_with_dash_smoothing(tmp_path, monkeypatch, capsy
         unking=True,
         smoothing=True,
         beam_threshold=BEAM_THRESHOLD,
-        beam_rank=BEAM_RANK
+        beam_rank=BEAM_RANK,
+        astar_path=ASTAR_PATH
     )
 
     output = capsys.readouterr().out.strip()
     assert output == "(A high-quality)"
+
+

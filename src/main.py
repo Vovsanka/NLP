@@ -42,6 +42,9 @@ def print_help():
     print("                     Beam search with threshold.")
     print("         -r --rank-beam =RANK")
     print("                     Beam search with a beam of constant size.")
+    print("         -a --astar =PATH")
+    print("                     Perform A*- search.")
+    print("                     Load the outside weights from the file PATH.")
     print()
     print("  binarise [OPTIONS]")
     print("                     Binarise a sequence of constituent trees read from stdin.")
@@ -111,6 +114,7 @@ def cmd_parse(args: list):
     smoothing: bool = False
     beam_threshold: float  = 0
     beam_rank: int = 99999 # infinity
+    astar_path: str = ""
     while args and args[0].startswith("-"):
         if args[0] in ("-u", "--unking"):
             unking = True
@@ -132,6 +136,9 @@ def cmd_parse(args: list):
         elif len(args) > 1 and args[0] in ("-r", "--rank-beam"):
             beam_rank = int(args[1])
             args = args[2:]
+        elif len(args) > 1 and args[0] in ("-a", "--astar"):
+            astar_path = args[1]
+            args = args[2:]
         else:
             exit_not_implemented()
         
@@ -148,7 +155,8 @@ def cmd_parse(args: list):
         unking=unking,
         smoothing=smoothing,
         beam_threshold=beam_threshold,
-        beam_rank=beam_rank
+        beam_rank=beam_rank,
+        astar_path=astar_path
     )
 
 def cmd_binarise(args: list):

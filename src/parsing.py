@@ -61,6 +61,17 @@ def load_lexical_rules(path: str) -> list[SR]:
             rules.append(rule)
     return rules
 
+def load_indexed_outside(path: str, nt_idx: dict[NT, int]) -> list[float]:
+    indexed_outside: list[float] = [0] * len(nt_idx)
+    with open(path, "r", encoding="utf8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            [nonterminal, out_weight] = line.split()
+            indexed_outside[nt_idx[nonterminal]] = float(out_weight)
+    return indexed_outside
+
 
 def preprocess_rules(lexical_rules: str, syntactic_rules: str) -> tuple[dict[NT, int], list[tuple], list[list[int]]]:
     """
@@ -107,7 +118,8 @@ def deduce(
         contained: list[list[int]],
         start: NT,
         beam_threshold: float,
-        beam_rank: int
+        beam_rank: int,
+        out: list[float]
     ) -> str | None:
     """
     Deductive parsing algorithm producing a derivation tree in PTB format for the given sentense
@@ -173,6 +185,8 @@ def deduce(
     # main parsing procedure for bottom-up deduction by matching syntactic rules
     while priority_queue:
         w, i, j, k, r, ij = priority_queue_pop_best()
+        if k in out:
+            w *= out[k]
         if k not in c[i][j] or w > c[i][j][k]: # check if it is the best probability=weight for the range [i, j) and non-terminal indexed by k
             c[i][j][k] = w
             backtrace[i][j][k] = (r, ij)
@@ -228,7 +242,8 @@ def parse_sentences(
         unking: bool, 
         smoothing: bool,
         beam_threshold: float,
-        beam_rank: int    
+        beam_rank: int,
+        astar_path: str  
     ):
     """
     Parses the sentences one by one using syntactic and lexical rules
@@ -236,6 +251,7 @@ def parse_sentences(
     # load grammar rules and determine the words
     lexical_rules: list[LR] = load_lexical_rules(path=lexical_rules_path)
     syntactic_rules: list[SR]  = load_syntactic_rules(path=syntactic_rules_path)
+    #
     vocabulary: set[T] = set([lr.word for lr in lexical_rules])
     # preprocess the rules once before parsing 
     nt_idx, indexed_syntactic_rules, contained = preprocess_rules(lexical_rules=lexical_rules, syntactic_rules=syntactic_rules)
@@ -266,7 +282,8 @@ def parse_sentences(
             contained=contained,
             start=start_symbol,
             beam_threshold=beam_threshold,
-            beam_rank=beam_rank
+            beam_rank=beam_rank,
+            out=load_indexed_outside(path=astar_path, nt_idx=nt_idx) if astar_path else {}
         )
         #
         out = sys.stdout

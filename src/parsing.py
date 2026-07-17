@@ -162,17 +162,17 @@ def deduce(
         return priority_queue[-1][0]
     def get_min_weight():
         return priority_queue[0][0]
-    #
+    # check whether all word positions are covered
     covered = [False] * N 
     for r, lr in enumerate(lexical_rules):
         k = nt_idx[lr.label]
         if lr.word in word_set: 
             for i in word_positions[lr.word]:
                 covered[i] = True
-                priority_queue.add((lr.weight, i, i + 1, k, M + r, i + 1)) # ; lexical rules are indexed starting from M
-    if not all(covered): # check whether all word positions are covered (if not => unknown token)
+                priority_queue.add((lr.weight, i, i + 1, k, M + r, i + 1)) # lexical rules are indexed starting from M
+    if not all(covered):
         return None
-    #
+    # prune the priority queue by threshold or size
     def prune():
         if not priority_queue:
             return
@@ -263,7 +263,7 @@ def parse_sentences(
         words: list[T] = [T(w) for w in line.strip().split()]
         # replace unknown words by UNK
         original_words: list[T] | None = None
-        if unking:
+        if unking or smoothing:
             original_words = words.copy()
             unked_word_positions: list[int] = []
             unked_word_signatures: list[T] = []
@@ -287,11 +287,12 @@ def parse_sentences(
         )
         #
         out = sys.stdout
-        #
-        if unking:
+        # output the derivation tree or NOPARSE
+        if unking or smoothing:
             if parsed_ptb is None:
                 out.write(f"(NOPARSE {' '.join(original_words)})\n")
             else:
+                # restore the original words in the derivation tree
                 no_unking_ptb = ""
                 current_unked_word_position_index = 0
                 j = 0

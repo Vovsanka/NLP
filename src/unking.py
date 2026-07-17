@@ -6,9 +6,9 @@ from models import SE, T, NT
 
 
 def unk_trees(threshold: int, smoothing: bool = False):
-    #
+    # count the entries of each word (absolute frequency)
     word_counter: dict[T, int] = {}
-    #
+    # accumlate the word count 
     def accumulate_words(se: SE):
         # preterminal (NT -> T)
         if len(se.children) == 1 and isinstance(se.children[0], T):
@@ -20,7 +20,7 @@ def unk_trees(threshold: int, smoothing: bool = False):
         # the children are exclusively SE
         for child in se.children:
             accumulate_words(se=child)
-    #
+    # read the trees line by line and count the word entries
     # print("\nTreebank: (one tree per line)")
     syntactic_expressions: list[SE] = []
     for line in sys.stdin:
@@ -32,8 +32,8 @@ def unk_trees(threshold: int, smoothing: bool = False):
         # assert str(se) == line
         accumulate_words(se)
         syntactic_expressions.append(se)
-    # leaf number indexed from 1
-    leaf = 0 
+    # replace rare words with UNK or signature (for smoothing)    
+    leaf = 0 # leaf number is indexed from 1
     def replace_rare_words_with_unk(se: SE) -> SE:
         nonlocal leaf
         # preterminal (NT -> T)
@@ -52,7 +52,7 @@ def unk_trees(threshold: int, smoothing: bool = False):
             label=se.label,
             children=[replace_rare_words_with_unk(child) for child in se.children]
         )
-    #
+    # output the modified tree to stdout
     out = sys.stdout
     for se in syntactic_expressions:
         out.write(str(replace_rare_words_with_unk(se)) + "\n")
@@ -61,6 +61,7 @@ def unk_trees(threshold: int, smoothing: bool = False):
 
 def get_unknown_signature(word: T, i: int, smoothing: bool) -> T:  # i = word index starting from 1
     unk_sign = "UNK"
+    # The signature is just UNK if no smoothing is applied
     if not smoothing or len(word) == 0:
         return T(unk_sign)
     # Letter suffix 
@@ -93,7 +94,7 @@ def get_unknown_signature(word: T, i: int, smoothing: bool) -> T:  # i = word in
     # Word suffix
     if len(word) > 3 and word[-1].isalpha():
         unk_sign += "-" + word[-1].lower()
-    # 
+    # The signature is a UNK with the suffixes
     return T(unk_sign)
 
 

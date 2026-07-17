@@ -8,7 +8,7 @@ from models import SE, T, NT
 def debinarise_trees():
     # print("\nBinarised Treebank: (one tree per line)")
     out = sys.stdout
-    #
+    # debinarise each tree line by line
     for line in sys.stdin:
         # read the line with the tree from stdin
         line = line.rstrip("\n")
@@ -23,7 +23,7 @@ def debinarise_trees():
 def binarise_trees(H: int, V: int):
     # print("\nTreebank: (one tree per line)")
     out = sys.stdout
-    #
+    # binarise each tree line by line
     for line in sys.stdin:
         # read the line with the tree from stdin
         line = line.rstrip("\n")
@@ -57,7 +57,6 @@ def debinarise_one_tree(se: SE) -> SE:
         else:
             direct_children.append(last_child)
             break
-    #
     return SE(
         label=original_label,
         children=[debinarise_one_tree(se=child) for child in direct_children]
@@ -77,7 +76,7 @@ def binarise_one_tree(se: SE, H: int, V: int, ancestors: list[NT] = [], original
         for anc in ancestors:
             add_parents_label += f"{anc},"
         add_parents_label = add_parents_label[:-1] + ">"
-    #
+    # update the ancestors according to the parameter V
     if V > 1: 
         new_ancestors = [original_se.label] + ancestors
         if len(new_ancestors) >= V:
